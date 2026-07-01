@@ -394,6 +394,27 @@ MonoBehaviour:
   - cardName: CatID
     artwork: {fileID: -3580636175541894626, guid: 4f0145ba6813a46358634e9ff5638140, type: 3}
     rarity: 0
+  - cardName: DDR9
+    artwork: {fileID: 4363036848082400488, guid: 7bb07838623d84f46875107c2f1d8661, type: 3}
+    rarity: 0
+  - cardName: PigMask
+    artwork: {fileID: -1530295762076169802, guid: 086def243681940559f6589c1e406fb2, type: 3}
+    rarity: 0
+  - cardName: Prescription
+    artwork: {fileID: -4391382925247704202, guid: 776c092c9ce0743df9d9fb2f8afa8091, type: 3}
+    rarity: 0
+  - cardName: Receipt
+    artwork: {fileID: 7500429869564414184, guid: d687740c96fd14df5a0a2abaf74ceb3b, type: 3}
+    rarity: 0
+  - cardName: Sandal
+    artwork: {fileID: 5218727259605334881, guid: deb869d5fb7244d05a0a93727e4e39c8, type: 3}
+    rarity: 0
+  - cardName: Ziplock
+    artwork: {fileID: -6813477030934799497, guid: 8b1d1bd9a97554093a5613151fe581f0, type: 3}
+    rarity: 0
+  - cardName: NormalCard
+    artwork: {fileID: 8574651155694835425, guid: dd47974f69fe94f7a9cdb712c651b3a6, type: 3}
+    rarity: 0
   rareCards:
   - cardName: Ash
     artwork: {fileID: 3213535477422337506, guid: 86731f15a8687465f87179bfc34cd4fe, type: 3}
@@ -401,12 +422,32 @@ MonoBehaviour:
   - cardName: Powerbank
     artwork: {fileID: 2770932696778631756, guid: 8c2ced875beee460488a49d66ae6747c, type: 3}
     rarity: 1
+  - cardName: Black
+    artwork: {fileID: 66229840311733000, guid: 82d2add0694d04eb1bed7bb9f080c2b3, type: 3}
+    rarity: 1
+  - cardName: GPS
+    artwork: {fileID: 2959159417643316669, guid: 3e24b4aadd6a74dc4baddd017c11cd61, type: 3}
+    rarity: 1
+  - cardName: Tarot
+    artwork: {fileID: 5940727170716582802, guid: d565a280a1fb048c9bfcd8cd1ccc8690, type: 3}
+    rarity: 1
+  - cardName: NotCard
+    artwork: {fileID: 4320359397256487486, guid: ac95c5045fd0e409a84cebe635e65eb4, type: 3}
+    rarity: 1
+  - cardName: Ticket
+    artwork: {fileID: -3686629851130754594, guid: f2a46c9a39cd04420977e774fcf14b12, type: 3}
+    rarity: 1
   superRareCards:
   - cardName: Amulet
     artwork: {fileID: 5614970056041299971, guid: 7243be373fe7a467991780b300865cd3, type: 3}
     rarity: 2
-  cardPrefab: {fileID: 7430937422914229146, guid: 38db180b0d3e1427290777f68a7cdb78, type: 3}
-  cardSpawnPoint: {fileID: 172898653}
+  - cardName: Bed
+    artwork: {fileID: 4509532509179365762, guid: b5f3094ddd8444915863084e290b6186, type: 3}
+    rarity: 2
+  - cardName: Block
+    artwork: {fileID: 8187409320664360960, guid: 2b2307fe476a6488684736231a907530, type: 3}
+    rarity: 2
+  cardRevealController: {fileID: 1413934660}
   sequenceController: {fileID: 207091864}
 --- !u!4 &207091862
 Transform:
@@ -1024,6 +1065,181 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   bottomPackAnimator: {fileID: 1652053429}
+--- !u!1 &1033284520
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 1033284521}
+  m_Layer: 0
+  m_Name: RevealAnchor
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &1033284521
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1033284520}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!1 &1413934659
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 1413934661}
+  - component: {fileID: 1413934660}
+  m_Layer: 0
+  m_Name: CardRevealRoot
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!114 &1413934660
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1413934659}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: bd40fed1359c740f2b89c6281832c026, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  cardPrefab: {fileID: 7430937422914229146, guid: 38db180b0d3e1427290777f68a7cdb78, type: 3}
+  dimBackground: {fileID: 1706815272}
+  revealAnchor: {fileID: 1033284521}
+  riseFromY: -8
+  riseToY: 0
+  riseDuration: 0.7
+  riseStaggerDelay: 0.06
+  riseCurve:
+    serializedVersion: 2
+    m_Curve:
+    - serializedVersion: 3
+      time: 0
+      value: 0
+      inSlope: 0
+      outSlope: 0
+      tangentMode: 0
+      weightedMode: 0
+      inWeight: 0
+      outWeight: 0
+    - serializedVersion: 3
+      time: 1
+      value: 1
+      inSlope: 0
+      outSlope: 0
+      tangentMode: 0
+      weightedMode: 0
+      inWeight: 0
+      outWeight: 0
+    m_PreInfinity: 2
+    m_PostInfinity: 2
+    m_RotationOrder: 4
+  stackOffsetY: -0.15
+  stackScaleStep: 0.03
+  peekMaxX: 1.5
+  peekRotationMax: 10
+  peekSpringSpeed: 12
+  peekParallaxFactor: 0.15
+  clickThresholdPx: 15
+  revealZoomScale: 1.1
+  revealZoomDuration: 0.2
+  revealHoldDuration: 0.25
+  revealExitDuration: 0.35
+  revealExitY: 10
+  revealExitCurve:
+    serializedVersion: 2
+    m_Curve:
+    - serializedVersion: 3
+      time: 0
+      value: 0
+      inSlope: 0
+      outSlope: 0
+      tangentMode: 0
+      weightedMode: 0
+      inWeight: 0
+      outWeight: 0
+    - serializedVersion: 3
+      time: 1
+      value: 1
+      inSlope: 0
+      outSlope: 0
+      tangentMode: 0
+      weightedMode: 0
+      inWeight: 0
+      outWeight: 0
+    m_PreInfinity: 2
+    m_PostInfinity: 2
+    m_RotationOrder: 4
+  summarySpacingX: 0.9
+  summaryCardScale: 0.6
+  summaryAnimDuration: 0.5
+  summaryStaggerDelay: 0.08
+  summaryCurve:
+    serializedVersion: 2
+    m_Curve:
+    - serializedVersion: 3
+      time: 0
+      value: 0
+      inSlope: 0
+      outSlope: 0
+      tangentMode: 0
+      weightedMode: 0
+      inWeight: 0
+      outWeight: 0
+    - serializedVersion: 3
+      time: 1
+      value: 1
+      inSlope: 0
+      outSlope: 0
+      tangentMode: 0
+      weightedMode: 0
+      inWeight: 0
+      outWeight: 0
+    m_PreInfinity: 2
+    m_PostInfinity: 2
+    m_RotationOrder: 4
+  bgFadeInDuration: 0.35
+  bgTargetAlpha: 0.75
+  OnAllCardsRevealed:
+    m_PersistentCalls:
+      m_Calls: []
+--- !u!4 &1413934661
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1413934659}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: -1.2337531, y: -1.2366582, z: 0.024028853}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &1652053426
 GameObject:
   m_ObjectHideFlags: 0
@@ -1147,6 +1363,93 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 41a9e9713eaa04047a0480f7a5795e72, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+--- !u!1 &1706815271
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 1706815273}
+  - component: {fileID: 1706815272}
+  m_Layer: 0
+  m_Name: DimBackground
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!212 &1706815272
+SpriteRenderer:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1706815271}
+  m_Enabled: 1
+  m_CastShadows: 0
+  m_ReceiveShadows: 0
+  m_DynamicOccludee: 1
+  m_StaticShadowCaster: 0
+  m_MotionVectors: 1
+  m_LightProbeUsage: 1
+  m_ReflectionProbeUsage: 1
+  m_RayTracingMode: 0
+  m_RayTraceProcedural: 0
+  m_RayTracingAccelStructBuildFlagsOverride: 0
+  m_RayTracingAccelStructBuildFlags: 1
+  m_SmallMeshCulling: 1
+  m_RenderingLayerMask: 1
+  m_RendererPriority: 0
+  m_Materials:
+  - {fileID: 2100000, guid: a97c105638bdf8b4a8650670310a4cd3, type: 2}
+  m_StaticBatchInfo:
+    firstSubMesh: 0
+    subMeshCount: 0
+  m_StaticBatchRoot: {fileID: 0}
+  m_ProbeAnchor: {fileID: 0}
+  m_LightProbeVolumeOverride: {fileID: 0}
+  m_ScaleInLightmap: 1
+  m_ReceiveGI: 1
+  m_PreserveUVs: 0
+  m_IgnoreNormalsForChartDetection: 0
+  m_ImportantGI: 0
+  m_StitchLightmapSeams: 1
+  m_SelectedEditorRenderState: 0
+  m_MinimumChartSize: 4
+  m_AutoUVMaxDistance: 0.5
+  m_AutoUVMaxAngle: 89
+  m_LightmapParameters: {fileID: 0}
+  m_SortingLayerID: 0
+  m_SortingLayer: 0
+  m_SortingOrder: 5
+  m_Sprite: {fileID: 0}
+  m_Color: {r: 0, g: 0, b: 0, a: 0}
+  m_FlipX: 0
+  m_FlipY: 0
+  m_DrawMode: 0
+  m_Size: {x: 1, y: 1}
+  m_AdaptiveModeThreshold: 0.5
+  m_SpriteTileMode: 0
+  m_WasSpriteAssigned: 0
+  m_MaskInteraction: 0
+  m_SpriteSortPoint: 0
+--- !u!4 &1706815273
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1706815271}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: -1.2337531, y: -1.2366582, z: 0.024028853}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &1735083189
 GameObject:
   m_ObjectHideFlags: 0
@@ -1234,3 +1537,6 @@ SceneRoots:
   - {fileID: 207091862}
   - {fileID: 172898653}
   - {fileID: 56862852}
+  - {fileID: 1706815273}
+  - {fileID: 1413934661}
+  - {fileID: 1033284521}

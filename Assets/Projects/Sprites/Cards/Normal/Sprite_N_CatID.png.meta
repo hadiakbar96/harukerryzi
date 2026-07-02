@@ -119,23 +119,23 @@ TextureImporter:
     serializedVersion: 2
     sprites:
     - serializedVersion: 2
-      name: Sprite_N_CatID_0
+      name: Sprite_N_CatID_2
       rect:
         serializedVersion: 2
-        x: 50
-        y: 38
-        width: 654
-        height: 430
+        x: 44
+        y: 50
+        width: 430
+        height: 651
       alignment: 0
       pivot: {x: 0.5, y: 0.5}
-      border: {x: 0, y: 0, z: 0, w: 0}
+      border: {x: 0, y: 3, z: 2, w: 3}
       customData: 
       outline: []
       physicsShape: []
       tessellationDetail: -1
       bones: []
-      spriteID: e1289ee8e560f4ec0800000000000000
-      internalID: -3580636175541894626
+      spriteID: 98c432f5504895650800000000000000
+      internalID: 6222149518794902665
       vertices: []
       indices: 
       edges: []
@@ -144,7 +144,7 @@ TextureImporter:
     customData: 
     physicsShape: []
     bones: []
-    spriteID: 79673cc07a54545c8afc4349e99b797d
+    spriteID: 2a519654dfd1c4d8d8dfae73f4d83e86
     internalID: 0
     vertices: []
     indices: 

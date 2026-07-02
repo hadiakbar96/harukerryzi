@@ -386,13 +386,13 @@ MonoBehaviour:
   cameraAnimator: {fileID: 0}
   normalCards:
   - cardName: AlienID
-    artwork: {fileID: 3253199326428422363, guid: a9a422d5887c947b2900071559f4c80c, type: 3}
+    artwork: {fileID: 3253199326428422363, guid: 2d340ca48c2c347dab9c0a5fd535b552, type: 3}
     rarity: 0
   - cardName: BookOfDeath
     artwork: {fileID: 462264720204288502, guid: 3058be6b3fe60452989c5bfe99258f5b, type: 3}
     rarity: 0
   - cardName: CatID
-    artwork: {fileID: -3580636175541894626, guid: 4f0145ba6813a46358634e9ff5638140, type: 3}
+    artwork: {fileID: 6222149518794902665, guid: 4f0145ba6813a46358634e9ff5638140, type: 3}
     rarity: 0
   - cardName: DDR9
     artwork: {fileID: 4363036848082400488, guid: 7bb07838623d84f46875107c2f1d8661, type: 3}
@@ -420,7 +420,7 @@ MonoBehaviour:
     artwork: {fileID: 3213535477422337506, guid: 86731f15a8687465f87179bfc34cd4fe, type: 3}
     rarity: 1
   - cardName: Powerbank
-    artwork: {fileID: 2770932696778631756, guid: 8c2ced875beee460488a49d66ae6747c, type: 3}
+    artwork: {fileID: 5624834588279139952, guid: 4ddf8b5d0fea14f0e9657e9e82343c41, type: 3}
     rarity: 1
   - cardName: Black
     artwork: {fileID: 66229840311733000, guid: 82d2add0694d04eb1bed7bb9f080c2b3, type: 3}
@@ -432,7 +432,7 @@ MonoBehaviour:
     artwork: {fileID: 5940727170716582802, guid: d565a280a1fb048c9bfcd8cd1ccc8690, type: 3}
     rarity: 1
   - cardName: NotCard
-    artwork: {fileID: 4320359397256487486, guid: ac95c5045fd0e409a84cebe635e65eb4, type: 3}
+    artwork: {fileID: -7942241826326981498, guid: cf55dcd5eea004f4bb4980781ddfbef4, type: 3}
     rarity: 1
   - cardName: Ticket
     artwork: {fileID: -3686629851130754594, guid: f2a46c9a39cd04420977e774fcf14b12, type: 3}
@@ -1193,7 +1193,7 @@ MonoBehaviour:
     m_PostInfinity: 2
     m_RotationOrder: 4
   summarySpacingX: 0
-  summaryCardScale: 0
+  summaryCardScale: 0.7
   summaryScreenFill: 0.7
   summaryAnimDuration: 0.5
   summaryStaggerDelay: 0.08
@@ -1426,7 +1426,7 @@ SpriteRenderer:
   m_SortingLayer: 0
   m_SortingOrder: 5
   m_Sprite: {fileID: 0}
-  m_Color: {r: 0, g: 0, b: 0, a: 0}
+  m_Color: {r: 0, g: 0, b: 0, a: 0.21568628}
   m_FlipX: 0
   m_FlipY: 0
   m_DrawMode: 0
@@ -1445,8 +1445,8 @@ Transform:
   m_GameObject: {fileID: 1706815271}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: -1.2337531, y: -1.2366582, z: 0.024028853}
-  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_LocalPosition: {x: -0.92, y: -0.09, z: 0.024028853}
+  m_LocalScale: {x: 16.857653, y: 2.1875, z: 2.1875}
   m_ConstrainProportionsScale: 0
   m_Children: []
   m_Father: {fileID: 0}

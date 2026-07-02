@@ -116,10 +116,10 @@ TextureImporter:
       name: Sprite_R_Ticket_0
       rect:
         serializedVersion: 2
-        x: 103
-        y: 3
-        width: 311
-        height: 763
+        x: 83
+        y: 0
+        width: 346
+        height: 768
       alignment: 0
       pivot: {x: 0, y: 0}
       border: {x: 0, y: 0, z: 0, w: 0}

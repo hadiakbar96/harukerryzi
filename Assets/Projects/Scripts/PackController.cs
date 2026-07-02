@@ -39,12 +39,16 @@ public class PackController : MonoBehaviour
 
         Card[] selectedCards = new Card[5];
         for (int i = 0; i < 5; i++)
+        {
             selectedCards[i] = GetRandomCard();
+            // Save each card to persistent inventory for the Collection scene
+            CardInventory.AddCard(selectedCards[i]);
+        }
 
         cardRevealController.SetCards(selectedCards);
         cardRevealController.StartReveal();
 
-        Debug.Log("5 Cards Revealed");
+        Debug.Log("5 Cards Revealed — saved to inventory");
     }
 
     private Card GetRandomCard()

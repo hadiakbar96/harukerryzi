@@ -1,6 +1,7 @@
 using System.Collections;
 using UnityEngine;
 using UnityEngine.Events;
+using UnityEngine.SceneManagement;
 
 /// <summary>
 /// Card reveal controller — works with the existing Pack/Card prefab setup.
@@ -176,6 +177,22 @@ public class CardRevealController : MonoBehaviour
         // Keep dim background invisible at start
         if (dimBackground != null)
         {
+            // Auto-fix: if there is no sprite assigned in the Editor, create a white one
+            // and scale it up massively so it covers the whole screen.
+            if (dimBackground.sprite == null)
+            {
+                Texture2D tex = new Texture2D(1, 1);
+                tex.SetPixel(0, 0, Color.white);
+                tex.Apply();
+                // We set PixelsPerUnit to 1f so the 1x1 pixel texture becomes exactly 1x1 Unity units in world space.
+                // Then scaling it by 100 makes it 100x100 world units, easily covering the camera.
+                dimBackground.sprite = Sprite.Create(tex, new Rect(0, 0, 1, 1), new Vector2(0.5f, 0.5f), 1f);
+                dimBackground.transform.localScale = new Vector3(100f, 100f, 1f);
+            }
+
+            // Ensure it renders behind the cards (cards use sortingOrder 1..5)
+            dimBackground.sortingOrder = -10;
+
             Color c = dimBackground.color;
             c.a = 0f;
             dimBackground.color = c;
@@ -731,6 +748,9 @@ public class CardRevealController : MonoBehaviour
         _cardRenderers = null;
         _cardDisplays  = null;
         _state         = State.Inactive;
+        SceneManager.LoadScene("Collection");
+
+        
     }
 
     // ═══════════════════════════════════════════════════════════════

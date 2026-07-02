@@ -1,5 +1,5 @@
 fileFormatVersion: 2
-guid: a9a422d5887c947b2900071559f4c80c
+guid: 2d340ca48c2c347dab9c0a5fd535b552
 TextureImporter:
   internalIDToNameTable:
   - first:
@@ -116,10 +116,10 @@ TextureImporter:
       name: Sprite_N_AlienID_0
       rect:
         serializedVersion: 2
-        x: 37
-        y: 24
-        width: 695
-        height: 463
+        x: 25
+        y: 37
+        width: 463
+        height: 695
       alignment: 0
       pivot: {x: 0, y: 0}
       border: {x: 0, y: 0, z: 0, w: 0}

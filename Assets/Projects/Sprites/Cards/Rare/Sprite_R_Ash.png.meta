@@ -116,10 +116,10 @@ TextureImporter:
       name: Sprite_R_Ash_0
       rect:
         serializedVersion: 2
-        x: 15
-        y: 33
-        width: 473
-        height: 710
+        x: 0
+        y: 15
+        width: 505
+        height: 744
       alignment: 0
       pivot: {x: 0, y: 0}
       border: {x: 0, y: 0, z: 0, w: 0}

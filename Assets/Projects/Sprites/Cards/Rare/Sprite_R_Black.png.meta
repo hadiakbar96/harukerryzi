@@ -116,10 +116,10 @@ TextureImporter:
       name: Sprite_R_Black_0
       rect:
         serializedVersion: 2
-        x: 11
-        y: 16
-        width: 495
-        height: 725
+        x: 0
+        y: 15
+        width: 512
+        height: 736
       alignment: 0
       pivot: {x: 0, y: 0}
       border: {x: 0, y: 0, z: 0, w: 0}

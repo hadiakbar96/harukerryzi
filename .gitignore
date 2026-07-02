@@ -109,3 +109,7 @@ InitTestScene*.unity*
 # OS generated files
 .DS_Store
 .DS_Store?
+
+# Local editor tools (not shared)
+/Assets/Projects/Scripts/Editor/
+/Assets/Projects/Scripts/Editor.meta

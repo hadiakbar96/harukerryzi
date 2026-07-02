@@ -94,9 +94,12 @@ public class CardRevealController : MonoBehaviour
         AnimationCurve.EaseInOut(0f, 0f, 1f, 1f);
 
     [Header("Summary")]
-    [Tooltip("World-space X spacing between cards in summary")]
-    [SerializeField] private float summarySpacingX     = 0.9f;
-    [SerializeField] private float summaryCardScale    = 0.6f;
+    [Tooltip("World-space X spacing between card centres in summary. Leave 0 to auto-fit across the screen.")]
+    [SerializeField] private float summarySpacingX     = 0f;
+    [Tooltip("Scale of each card in the summary row. Leave 0 to auto-fit.")]
+    [SerializeField] private float summaryCardScale    = 0f;
+    [Tooltip("Fraction of the visible screen width used by all cards together (0–1).")]
+    [SerializeField] private float summaryScreenFill   = 0.85f;
     [SerializeField] private float summaryAnimDuration  = 0.5f;
     [SerializeField] private float summaryStaggerDelay  = 0.08f;
     [SerializeField] private AnimationCurve summaryCurve =
@@ -122,7 +125,8 @@ public class CardRevealController : MonoBehaviour
     private CardDisplay[]    _cardDisplays;
     private Card[]           _cards;          // data set from PackController
 
-    private int _currentIndex;
+    private int   _currentIndex;
+    private float _resolvedSummaryScale; // actual card scale used in summary (may differ from summaryCardScale when auto-fit is on)
 
     // Input
     private bool    _pointerDown;
@@ -557,10 +561,44 @@ public class CardRevealController : MonoBehaviour
 
     private IEnumerator ShowSummary()
     {
-        int     count      = _cardObjects.Length;
-        float   totalWidth = summarySpacingX * (count - 1);
-        float   startX     = -totalWidth / 2f;
-        Vector3 anchor     = GetAnchorWorldPos();
+        int     count  = _cardObjects.Length;
+        Vector3 anchor = GetAnchorWorldPos();
+
+        // ── Auto-calculate spacing and scale from camera width ──────────
+        float resolvedSpacing = summarySpacingX;
+        float resolvedScale   = summaryCardScale;
+
+        if (resolvedSpacing <= 0f || resolvedScale <= 0f)
+        {
+            // Visible world width of the camera
+            float camHalfWidth = Camera.main.orthographic
+                ? Camera.main.orthographicSize * Camera.main.aspect
+                : Mathf.Tan(Camera.main.fieldOfView * 0.5f * Mathf.Deg2Rad)
+                  * Mathf.Abs(Camera.main.transform.position.z) * Camera.main.aspect;
+
+            float usableWidth = camHalfWidth * 2f * summaryScreenFill;
+
+            // Spacing = usable width divided evenly between card centres
+            if (resolvedSpacing <= 0f)
+                resolvedSpacing = count > 1 ? usableWidth / (count - 1) : 0f;
+
+            // Scale: make each card fit inside its slot (slot width = spacing)
+            // We measure the card's sprite width in world units at scale 1
+            if (resolvedScale <= 0f)
+            {
+                float slotWidth   = count > 1 ? resolvedSpacing : usableWidth;
+                float cardWorldW  = GetCardSpriteWorldWidth();
+                float fitScale    = cardWorldW > 0f ? (slotWidth * 0.9f) / cardWorldW : 0.45f;
+                resolvedScale     = Mathf.Clamp(fitScale, 0.1f, 1.5f);
+            }
+        }
+        // ───────────────────────────────────────────────────────────────
+
+        // Cache the resolved scale so SummaryPulse can use it
+        _resolvedSummaryScale = resolvedScale;
+
+        float totalWidth = resolvedSpacing * (count - 1);
+        float startX     = -totalWidth / 2f;
 
         // Re-activate all cards at anchor, scale 0
         for (int i = 0; i < count; i++)
@@ -596,12 +634,12 @@ public class CardRevealController : MonoBehaviour
                 float cardTime = Mathf.Clamp01((elapsed - delay) / summaryAnimDuration);
                 float curved   = summaryCurve.Evaluate(cardTime);
 
-                float targetX = anchor.x + startX + summarySpacingX * i;
+                float targetX = anchor.x + startX + resolvedSpacing * i;
                 _cardObjects[i].transform.position = Vector3.Lerp(
                     new Vector3(anchor.x, anchor.y, 0f),
                     new Vector3(targetX, anchor.y, 0f), curved);
 
-                float sc = Mathf.Lerp(0f, summaryCardScale, curved);
+                float sc = Mathf.Lerp(0f, resolvedScale, curved);
                 _cardObjects[i].transform.localScale = new Vector3(sc, sc, 1f);
             }
 
@@ -611,9 +649,9 @@ public class CardRevealController : MonoBehaviour
         // Snap final positions
         for (int i = 0; i < count; i++)
         {
-            float targetX = anchor.x + startX + summarySpacingX * i;
+            float targetX = anchor.x + startX + resolvedSpacing * i;
             _cardObjects[i].transform.position  = new Vector3(targetX, anchor.y, 0f);
-            _cardObjects[i].transform.localScale = Vector3.one * summaryCardScale;
+            _cardObjects[i].transform.localScale = Vector3.one * resolvedScale;
         }
 
         // Subtle pulse for Rare / SuperRare cards
@@ -626,7 +664,8 @@ public class CardRevealController : MonoBehaviour
 
     private IEnumerator SummaryPulse(int slotIndex)
     {
-        float baseScale   = summaryCardScale;
+        // Use the resolved scale (auto-computed), NOT summaryCardScale which may be 0
+        float baseScale   = _resolvedSummaryScale;
         float pulseAmount = _cards[slotIndex].rarity == CardRarity.SuperRare ? 0.04f : 0.02f;
         float speed       = _cards[slotIndex].rarity == CardRarity.SuperRare ? 2.5f  : 1.8f;
 
@@ -723,5 +762,24 @@ public class CardRevealController : MonoBehaviour
         float distToAnchor = Mathf.Abs(cam.transform.position.z - 0f);
         float halfHeight   = Mathf.Tan(cam.fieldOfView * 0.5f * Mathf.Deg2Rad) * distToAnchor;
         return (halfHeight * 2f) / Screen.height;
+    }
+
+    /// <summary>
+    /// Returns the world-space width of the card sprite at scale 1.
+    /// Uses the first card renderer's sprite to measure. Falls back to 0 if unavailable.
+    /// </summary>
+    private float GetCardSpriteWorldWidth()
+    {
+        // Try to get sprite from the first instantiated card
+        for (int i = 0; i < _cardRenderers.Length; i++)
+        {
+            if (_cardRenderers[i] != null && _cardRenderers[i].sprite != null)
+            {
+                Sprite s = _cardRenderers[i].sprite;
+                // sprite.bounds gives the local-space size at scale 1
+                return s.bounds.size.x;
+            }
+        }
+        return 0f;
     }
 }

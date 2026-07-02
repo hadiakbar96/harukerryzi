@@ -1192,8 +1192,9 @@ MonoBehaviour:
     m_PreInfinity: 2
     m_PostInfinity: 2
     m_RotationOrder: 4
-  summarySpacingX: 0.9
-  summaryCardScale: 0.6
+  summarySpacingX: 0
+  summaryCardScale: 0
+  summaryScreenFill: 0.7
   summaryAnimDuration: 0.5
   summaryStaggerDelay: 0.08
   summaryCurve:

@@ -87,15 +87,21 @@ public class OpeningStoryController : MonoBehaviour
     //  Narration Text
     // ══════════════════════════════════════════════════════════════
 
-    private readonly string _narrationContent =
+    // Tiap section ditampilkan bergantian: ketik → klik → hilang → section berikutnya
+    private readonly string[] _narrationSections = new string[]
+    {
+        // Section 1
         "A nerdy office worker wearing glasses has just finished work. " +
         "Grinning from ear to ear, he stops by his favorite gacha shop to buy the latest Loli Gacha Pack.\n\n" +
         "As he leaves the shop, he walks down the street while happily admiring the cards he just pulled. " +
-        "Suddenly, without noticing where he's going, he falls straight into an open sewer.\n\n" +
+        "Suddenly, without noticing where he's going, he falls straight into an open sewer.",
+
+        // Section 2
         "Moments later, he wakes up, still dizzy and confused. " +
         "Looking around, he realizes he's trapped deep inside the sewer. " +
         "Before he can figure out what happened, a sewer rat acting as the dungeon's gatekeeper appears " +
-        "and tells him that if he wants to escape, he'll have to defeat it in battle.";
+        "and tells him that if he wants to escape, he'll have to defeat it in battle.",
+    };
 
     // ══════════════════════════════════════════════════════════════
     //  Dialog Data
@@ -189,16 +195,22 @@ public class OpeningStoryController : MonoBehaviour
         // ── FASE 1: Layar Hitam (tunggu sebentar) ──
         yield return new WaitForSeconds(1.0f);
 
-        // ── FASE 2: Narasi Typewriter ──
+        // ── FASE 2: Narasi Typewriter (per section) ──
         narrationPanel.SetActive(true);
         narrationText.text = "";
 
-        yield return StartCoroutine(TypewriterEffect(narrationText, _narrationContent));
+        for (int i = 0; i < _narrationSections.Length; i++)
+        {
+            yield return StartCoroutine(TypewriterEffect(narrationText, _narrationSections[i]));
 
-        // Tampilkan prompt "click to continue"
-        clickPrompt.gameObject.SetActive(true);
-        yield return WaitForClick();
-        clickPrompt.gameObject.SetActive(false);
+            // Tampilkan prompt "click to continue"
+            clickPrompt.gameObject.SetActive(true);
+            yield return WaitForClick();
+            clickPrompt.gameObject.SetActive(false);
+
+            // Bersihkan teks sebelum section berikutnya
+            narrationText.text = "";
+        }
 
         // ── FASE 3: Fade ke Dialog Screen ──
         narrationPanel.SetActive(false);

@@ -1,0 +1,77 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 8cc5bd4065406409abdfa257bc81cd85, type: 3}
+  m_Name: CardDatabase
+  m_EditorClassIdentifier: 
+  normalCards:
+  - cardName: AlienID
+    artwork: {fileID: 3253199326428422363, guid: 2d340ca48c2c347dab9c0a5fd535b552, type: 3}
+    rarity: 0
+  - cardName: BookOfDeath
+    artwork: {fileID: 462264720204288502, guid: 3058be6b3fe60452989c5bfe99258f5b, type: 3}
+    rarity: 0
+  - cardName: CatID
+    artwork: {fileID: 6222149518794902665, guid: 4f0145ba6813a46358634e9ff5638140, type: 3}
+    rarity: 0
+  - cardName: DDR9
+    artwork: {fileID: 4363036848082400488, guid: 7bb07838623d84f46875107c2f1d8661, type: 3}
+    rarity: 0
+  - cardName: PigMask
+    artwork: {fileID: -1530295762076169802, guid: 086def243681940559f6589c1e406fb2, type: 3}
+    rarity: 0
+  - cardName: Prescription
+    artwork: {fileID: -4391382925247704202, guid: 776c092c9ce0743df9d9fb2f8afa8091, type: 3}
+    rarity: 0
+  - cardName: Receipt
+    artwork: {fileID: 7500429869564414184, guid: d687740c96fd14df5a0a2abaf74ceb3b, type: 3}
+    rarity: 0
+  - cardName: Sandal
+    artwork: {fileID: 5218727259605334881, guid: deb869d5fb7244d05a0a93727e4e39c8, type: 3}
+    rarity: 0
+  - cardName: Ziplock
+    artwork: {fileID: -6813477030934799497, guid: 8b1d1bd9a97554093a5613151fe581f0, type: 3}
+    rarity: 0
+  - cardName: NormalCard
+    artwork: {fileID: 8574651155694835425, guid: dd47974f69fe94f7a9cdb712c651b3a6, type: 3}
+    rarity: 0
+  rareCards:
+  - cardName: Ash
+    artwork: {fileID: 3213535477422337506, guid: 86731f15a8687465f87179bfc34cd4fe, type: 3}
+    rarity: 1
+  - cardName: Black
+    artwork: {fileID: 66229840311733000, guid: 82d2add0694d04eb1bed7bb9f080c2b3, type: 3}
+    rarity: 1
+  - cardName: GPS
+    artwork: {fileID: 2959159417643316669, guid: 3e24b4aadd6a74dc4baddd017c11cd61, type: 3}
+    rarity: 1
+  - cardName: NotCard
+    artwork: {fileID: -7942241826326981498, guid: cf55dcd5eea004f4bb4980781ddfbef4, type: 3}
+    rarity: 1
+  - cardName: Powerbank
+    artwork: {fileID: 5624834588279139952, guid: 4ddf8b5d0fea14f0e9657e9e82343c41, type: 3}
+    rarity: 0
+  - cardName: Tarot
+    artwork: {fileID: 5940727170716582802, guid: d565a280a1fb048c9bfcd8cd1ccc8690, type: 3}
+    rarity: 1
+  - cardName: Ticket
+    artwork: {fileID: -3686629851130754594, guid: f2a46c9a39cd04420977e774fcf14b12, type: 3}
+    rarity: 1
+  superRareCards:
+  - cardName: Amulet
+    artwork: {fileID: 5614970056041299971, guid: 7243be373fe7a467991780b300865cd3, type: 3}
+    rarity: 0
+  - cardName: Bed
+    artwork: {fileID: 4509532509179365762, guid: b5f3094ddd8444915863084e290b6186, type: 3}
+    rarity: 0
+  - cardName: Block
+    artwork: {fileID: 8187409320664360960, guid: 2b2307fe476a6488684736231a907530, type: 3}
+    rarity: 0

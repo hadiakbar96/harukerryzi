@@ -1,0 +1,29 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 3ca52ece8c7b74443ba9b69760bad8da, type: 3}
+  m_Name: Enemy_3_Tiang
+  m_EditorClassIdentifier: 
+  displayName: Tiang
+  level: 2
+  baseMashPower: 14
+  mashesPerSecond: 5.5
+  mashRandomness: 0.1
+  cardPool: []
+  enemyHandSprite: {fileID: -6531336036044845942, guid: 65fb457b172d8404dbf0667e88364629, type: 3}
+  entranceHandScale: 1.75
+  entranceHandStartPosition: {x: 800, y: 400}
+  entranceHandTargetPosition: {x: 500, y: -20}
+  clashHandsSprite: {fileID: 6833595615739063122, guid: a1cf26ecdaffe460e8b279f6826e1e2a, type: 3}
+  clashHandsScale: 1.75
+  clashBackgroundSprite: {fileID: 2951749541174826904, guid: b301a55f892c64724ba7afc1c427240b, type: 3}
+  rewardOnWin: 75
+  rewardOnLose: 30

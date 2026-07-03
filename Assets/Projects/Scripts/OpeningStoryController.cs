@@ -1,7 +1,13 @@
 using System.Collections;
+using Harukerryzi.Clash;
 using UnityEngine;
+using UnityEngine.SceneManagement;
 using UnityEngine.UI;
 using TMPro;
+#if UNITY_EDITOR
+using UnityEditor;
+using UnityEditor.SceneManagement;
+#endif
 
 /// <summary>
 /// Controller untuk scene Opening Story.
@@ -28,6 +34,8 @@ using TMPro;
 /// </summary>
 public class OpeningStoryController : MonoBehaviour
 {
+    public const string IntroSeenKey = "Harukerryzi.IntroSeen";
+
     // ══════════════════════════════════════════════════════════════
     //  Inspector References
     // ══════════════════════════════════════════════════════════════
@@ -63,6 +71,8 @@ public class OpeningStoryController : MonoBehaviour
     [SerializeField] private float typeSpeed = 0.03f;
     [SerializeField] private float fadeDuration = 1.0f;
     [SerializeField] private float slideDuration = 0.6f;
+    [SerializeField] private string battleSceneName = "ClashScene";
+    [SerializeField] private AduTosEnemyConfig tikusEnemyConfig;
 
     // ══════════════════════════════════════════════════════════════
     //  Private State
@@ -422,7 +432,57 @@ public class OpeningStoryController : MonoBehaviour
 
     private void OnUseItemClicked()
     {
-        Debug.Log("[OpeningStory] Use Item clicked! → Load battle scene");
-        // TODO: SceneManager.LoadScene("BattleScene");
+        AduTosEnemyConfig enemy = GetTikusEnemyConfig();
+        if (enemy != null)
+        {
+            BattleSession.SelectStage(0, enemy, false);
+        }
+        else
+        {
+            Debug.LogWarning("[OpeningStory] Missing Tikus enemy config. ClashScene will use its serialized fallback enemy.");
+        }
+
+        PlayerPrefs.SetInt(IntroSeenKey, 1);
+        PlayerPrefs.Save();
+        LoadBattleScene();
+    }
+
+    private AduTosEnemyConfig GetTikusEnemyConfig()
+    {
+        if (tikusEnemyConfig != null)
+        {
+            return tikusEnemyConfig;
+        }
+
+        AduTosEnemyConfig loaded = Resources.Load<AduTosEnemyConfig>("Enemies/Enemy_1_Tikus");
+        if (loaded != null)
+        {
+            tikusEnemyConfig = loaded;
+            return tikusEnemyConfig;
+        }
+
+#if UNITY_EDITOR
+        tikusEnemyConfig = AssetDatabase.LoadAssetAtPath<AduTosEnemyConfig>("Assets/Projects/Settings/Clash/Enemy_1_Tikus.asset");
+        return tikusEnemyConfig;
+#else
+        return null;
+#endif
+    }
+
+    private void LoadBattleScene()
+    {
+        if (Application.CanStreamedLevelBeLoaded(battleSceneName))
+        {
+            SceneManager.LoadScene(battleSceneName);
+            return;
+        }
+
+#if UNITY_EDITOR
+        EditorSceneManager.LoadSceneInPlayMode(
+            "Assets/Projects/Scenes/SandBox/ClashScene.unity",
+            new LoadSceneParameters(LoadSceneMode.Single));
+#else
+        Debug.LogWarning("[OpeningStory] Scene is not in Build Settings: " + battleSceneName);
+#endif
     }
 }

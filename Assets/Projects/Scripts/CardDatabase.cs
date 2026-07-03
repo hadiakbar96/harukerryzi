@@ -13,10 +13,19 @@ using UnityEngine;
 [CreateAssetMenu(fileName = "CardDatabase", menuName = "Cards/Card Database")]
 public class CardDatabase : ScriptableObject
 {
+    private static CardDatabase s_instance;
+
+    public static CardDatabase Instance => s_instance;
+
     [Header("All Cards By Rarity")]
     public Card[] normalCards;
     public Card[] rareCards;
     public Card[] superRareCards;
+
+    private void OnEnable()
+    {
+        s_instance = this;
+    }
 
     /// <summary>
     /// Returns ALL cards across every rarity tier.

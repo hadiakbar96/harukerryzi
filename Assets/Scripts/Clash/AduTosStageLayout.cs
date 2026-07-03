@@ -29,7 +29,9 @@ namespace Harukerryzi.Clash
 
         private Coroutine transition;
         private bool animateBattleHands;
+        private bool transitioningToClash;
 
+        public bool IsClashSquare { get; private set; }
         public RectTransform PlayArea => playArea;
 
         private void Awake()
@@ -41,6 +43,8 @@ namespace Harukerryzi.Clash
         {
             StopTransition();
             ApplyFullBackground(1f);
+            IsClashSquare = false;
+            transitioningToClash = false;
         }
 
         public void TransitionToClashSquare()
@@ -49,17 +53,17 @@ namespace Harukerryzi.Clash
             
             Debug.Log($"[StageLayout] TransitionToClashSquare called at {Time.time:F2}s");
             StopTransition();
-            _transitioningToClash = true;
+            transitioningToClash = true;
             transition = StartCoroutine(TransitionRoutine(false));
         }
 
         public void TransitionToFullBackground()
         {
-            if (!IsClashSquare && !_transitioningToClash) return;
+            if (!IsClashSquare && !transitioningToClash) return;
             
             Debug.Log($"[StageLayout] TransitionToFullBackground called at {Time.time:F2}s");
             StopTransition();
-            _transitioningToClash = false;
+            transitioningToClash = false;
             transition = StartCoroutine(TransitionRoutine(true));
         }
 
@@ -98,10 +102,12 @@ namespace Harukerryzi.Clash
             if (toFull)
             {
                 ApplyFullBackground(1f);
+                IsClashSquare = false;
             }
             else
             {
                 ApplyClashSquare(1f);
+                IsClashSquare = true;
             }
 
             transition = null;

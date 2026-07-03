@@ -2,6 +2,12 @@ using System.Collections;
 using UnityEngine;
 using UnityEngine.UI;
 using TMPro;
+using UnityEngine.SceneManagement;
+using Harukerryzi.Clash;
+#if UNITY_EDITOR
+using UnityEditor;
+using UnityEditor.SceneManagement;
+#endif
 
 /// <summary>
 /// Mengatur Stage Map interaktif:
@@ -25,6 +31,11 @@ public class StageMapController : MonoBehaviour
     [Header("=== References ===")]
     [Tooltip("Parent container dari semua nodes (akan digeser untuk centering)")]
     [SerializeField] private RectTransform nodesContainer;
+
+    [Tooltip("Enemy config per stage index: 0=Tikus, 1=Kunti, 2=Tiang")]
+    [SerializeField] private AduTosEnemyConfig[] stageEnemies;
+
+    [SerializeField] private string battleSceneName = "ClashScene";
 
     [Header("=== Layout ===")]
     [Tooltip("Jarak horizontal antar node")]
@@ -91,8 +102,25 @@ public class StageMapController : MonoBehaviour
     private void Start()
     {
         DiscoverNodes();
+        ApplyReturnedBattleResult();
+        _activeIndex = Mathf.Clamp(StageProgress.HighestUnlockedStage, 0, Mathf.Max(0, _totalStages - 1));
         ApplyStateImmediate();
         CenterOnActiveImmediate();
+    }
+
+    private void ApplyReturnedBattleResult()
+    {
+        if (!BattleSession.HasResult)
+        {
+            return;
+        }
+
+        if (BattleSession.PlayerWon && !BattleSession.IsReplayStage)
+        {
+            StageProgress.MarkStageCleared(BattleSession.SelectedStageIndex, Mathf.Max(0, _totalStages - 1));
+        }
+
+        BattleSession.ClearResult();
     }
 
     // ──────────────────────────────────────────────────────────────
@@ -145,23 +173,80 @@ public class StageMapController : MonoBehaviour
 
     private void OnNodeClicked(int index)
     {
-        // Hanya bisa klik stage yang aktif
-        if (index != _activeIndex) return;
+        // Current and cleared previous stages can be replayed. Future stages stay locked.
+        if (index > _activeIndex) return;
         if (_isTransitioning) return;
 
-        Debug.Log("[StageMap] Stage " + (_activeIndex + 1) + " completed!");
-
-        // Cek apakah sudah di stage terakhir
-        if (_activeIndex >= _totalStages - 1)
+        AduTosEnemyConfig enemy = GetEnemyForStage(index);
+        if (enemy == null)
         {
-            Debug.Log("[StageMap] Semua stage selesai!");
+            Debug.LogWarning("[StageMap] Missing enemy config for stage " + index);
             return;
         }
 
-        // Lanjut ke stage berikutnya
-        _activeIndex++;
-        StartCoroutine(TransitionToActive());
+        BattleSession.SelectStage(index, enemy, index < _activeIndex);
+        LoadBattleScene();
     }
+
+    private void LoadBattleScene()
+    {
+        if (string.IsNullOrWhiteSpace(battleSceneName))
+        {
+            Debug.LogWarning("[StageMap] Missing battle scene name.");
+            return;
+        }
+
+        if (Application.CanStreamedLevelBeLoaded(battleSceneName))
+        {
+            SceneManager.LoadScene(battleSceneName);
+            return;
+        }
+
+#if UNITY_EDITOR
+        EditorSceneManager.LoadSceneInPlayMode(
+            "Assets/Projects/Scenes/SandBox/ClashScene.unity",
+            new LoadSceneParameters(LoadSceneMode.Single));
+#else
+        Debug.LogWarning("[StageMap] Scene is not in Build Settings: " + battleSceneName);
+#endif
+    }
+
+    private AduTosEnemyConfig GetEnemyForStage(int index)
+    {
+        if (index < 0)
+        {
+            return null;
+        }
+
+        if (stageEnemies != null && index < stageEnemies.Length && stageEnemies[index] != null)
+        {
+            return stageEnemies[index];
+        }
+
+#if UNITY_EDITOR
+        return AssetDatabase.LoadAssetAtPath<AduTosEnemyConfig>(GetEnemyAssetPath(index));
+#else
+        return null;
+#endif
+    }
+
+#if UNITY_EDITOR
+    private static string GetEnemyAssetPath(int index)
+    {
+        switch (index)
+        {
+            case 0:
+                return "Assets/Projects/Settings/Clash/Enemy_1_Tikus.asset";
+            case 1:
+                return "Assets/Projects/Settings/Clash/Enemy_2_Kunti.asset";
+            case 2:
+                return "Assets/Projects/Settings/Clash/Enemy_3_Tiang.asset";
+            default:
+                return string.Empty;
+        }
+    }
+
+#endif
 
     // ──────────────────────────────────────────────────────────────
     //  Transition Animation
@@ -224,7 +309,6 @@ public class StageMapController : MonoBehaviour
 
             if (i == _activeIndex)
             {
-                // ACTIVE — kuning, besar, glow ON, tampil angka, sembunyikan lock
                 node.rect.sizeDelta = new Vector2(activeNodeSize, activeNodeSize);
                 SetNodeColors(node, _activeBg, _activeOutline, _activeText);
                 SetGlowActive(node, true);
@@ -234,10 +318,9 @@ public class StageMapController : MonoBehaviour
             }
             else if (i < _activeIndex)
             {
-                // COMPLETED — biru, kecil, glow OFF, tampil angka, sembunyikan lock
                 node.rect.sizeDelta = new Vector2(inactiveNodeSize, inactiveNodeSize);
                 SetNodeColors(node, _completedBg, _completedOutline, _completedText);
-                SetGlowActive(node, false);
+                SetGlowActive(node, true);
                 if (node.stageLabel != null) node.stageLabel.color = _completedStageLabel;
                 if (node.label != null) node.label.gameObject.SetActive(true);
                 if (node.lockIcon != null) node.lockIcon.SetActive(false);

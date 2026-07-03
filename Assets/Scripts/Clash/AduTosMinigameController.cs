@@ -72,6 +72,10 @@ namespace Harukerryzi.Clash
             {
                 enemyConfig = BattleSession.SelectedEnemy;
             }
+            else if (enemyConfig != null)
+            {
+                BattleSession.SelectStage(Mathf.Clamp(enemyConfig.Level, 0, 2), enemyConfig);
+            }
 #if UNITY_EDITOR
             else
             {

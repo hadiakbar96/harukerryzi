@@ -8,9 +8,18 @@ EditorBuildSettings:
   - enabled: 1
     path: Assets/Projects/Scenes/SampleScene.unity
     guid: 8c9cfa26abfee488c85f1582747f6a02
-  - enabled: 0
+  - enabled: 1
     path: Assets/Projects/Scenes/SandBox/StageMap.unity
     guid: f86165c2d23be4688bb94fa7e847dafb
+  - enabled: 1
+    path: Assets/Projects/Scenes/SandBox/TitleScreen.unity
+    guid: de47e87629fe247809590301724f21be
+  - enabled: 1
+    path: Assets/Projects/Scenes/SandBox/OpeningStory.unity
+    guid: 2f5931e5c25a54ae6b44bf44f2d42927
+  - enabled: 1
+    path: Assets/Projects/Scenes/SandBox/ClashScene.unity
+    guid: 4ef0f9df06924e839ba343e6e0418681
   m_configObjects:
     com.unity.input.settings.actions: {fileID: -944628639613478452, guid: 2bcd2660ca9b64942af0de543d8d7100, type: 3}
   m_UseUCBPForAssetBundles: 0

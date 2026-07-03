@@ -1,10 +1,10 @@
 fileFormatVersion: 2
-guid: b301a55f892c64724ba7afc1c427240b
+guid: f0b5ed8ca9275488c9d7de0a786fec94
 TextureImporter:
   internalIDToNameTable:
   - first:
-      213: 2951749541174826904
-    second: battle_tiang_0
+      213: 1750529779737707044
+    second: UI_LevelConnector_0
   externalObjects: {}
   serializedVersion: 13
   mipmaps:
@@ -100,13 +100,13 @@ TextureImporter:
     serializedVersion: 2
     sprites:
     - serializedVersion: 2
-      name: battle_tiang_0
+      name: UI_LevelConnector_0
       rect:
         serializedVersion: 2
-        x: 0
-        y: 0
-        width: 1920
-        height: 1080
+        x: 27
+        y: 14
+        width: 508
+        height: 105
       alignment: 0
       pivot: {x: 0, y: 0}
       border: {x: 0, y: 0, z: 0, w: 0}
@@ -115,8 +115,8 @@ TextureImporter:
       physicsShape: []
       tessellationDetail: -1
       bones: []
-      spriteID: 897d5a39198b6f820800000000000000
-      internalID: 2951749541174826904
+      spriteID: 422420a5f812b4810800000000000000
+      internalID: 1750529779737707044
       vertices: []
       indices: 
       edges: []
@@ -135,7 +135,7 @@ TextureImporter:
     spriteCustomMetadata:
       entries: []
     nameFileIdTable:
-      battle_tiang_0: 2951749541174826904
+      UI_LevelConnector_0: 1750529779737707044
   mipmapLimitGroupName: 
   pSDRemoveMatte: 0
   userData: 

@@ -7,6 +7,8 @@ public static class ClashBuildSettingsTool
 {
     private static readonly string[] RequiredScenes =
     {
+        "Assets/Projects/Scenes/SandBox/TitleScreen.unity",
+        "Assets/Projects/Scenes/SandBox/OpeningStory.unity",
         "Assets/Projects/Scenes/SandBox/StageMap.unity",
         "Assets/Projects/Scenes/SandBox/ClashScene.unity"
     };
@@ -41,6 +43,14 @@ public static class ClashBuildSettingsTool
         }
 
         EditorBuildSettings.scenes = scenes.ToArray();
-        Debug.Log("StageMap and ClashScene are enabled in Build Settings.");
+        Debug.Log("TitleScreen, OpeningStory, StageMap, and ClashScene are enabled in Build Settings.");
+    }
+
+    [MenuItem("Tools/Clash/Reset Intro Flag")]
+    public static void ResetIntroFlag()
+    {
+        PlayerPrefs.DeleteKey(OpeningStoryController.IntroSeenKey);
+        PlayerPrefs.Save();
+        Debug.Log("Reset intro flag. Title Play will open OpeningStory next time.");
     }
 }

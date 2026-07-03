@@ -1,182 +1,203 @@
 using System.Collections;
 using UnityEngine;
-using UnityEngine.UI;
 using UnityEngine.Events;
+using UnityEngine.SceneManagement;
 
 /// <summary>
-/// Pokemon TCG Pocket-style card reveal controller (Canvas UI).
+/// Card reveal controller — works with the existing Pack/Card prefab setup.
 ///
-/// Flow: Pack dibuka → OnPackOpened → StartReveal() →
-///   1) Background fade-in
-///   2) 5 kartu naik dari bawah (stack)
-///   3) Player hold+drag kiri/kanan untuk peek kartu belakang
-///   4) Player click untuk reveal kartu depan (fly-out)
-///   5) Setelah 5 kartu → summary (5 kartu berdampingan)
+/// Flow:
+///   PackController calls SetCards() then StartReveal()
+///   1) Dim background fades in
+///   2) 5 card GameObjects rise from below the screen (stacked)
+///   3) Player drags left/right to peek the card behind
+///   4) Player clicks to reveal the front card (fly-out)
+///   5) After 5 cards → summary (5 cards side by side)
+///   6) Click to dismiss
 ///
-/// ═══════════════════════════════════════════════════════════════
-///  SETUP DI UNITY EDITOR:
-/// ═══════════════════════════════════════════════════════════════
+/// ════════════════════════════════════════════════════════════════
+///  SETUP IN UNITY EDITOR:
+/// ════════════════════════════════════════════════════════════════
 ///
-///  Canvas (Screen Space - Overlay, sort order tinggi mis. 10)
-///  └── CardRevealPanel  ← attach script ini
-///      │                   + CanvasGroup (alpha=1)
-///      │                   + Image (warna hitam, alpha=0, Raycast Target ON)
-///      │
-///      ├── CardContainer  (RectTransform: stretch-all, anchors 0-1)
-///      │   ├── Card_0     (Image, Raycast Target OFF) ← backmost
-///      │   ├── Card_1     (Image, Raycast Target OFF)
-///      │   ├── Card_2     (Image, Raycast Target OFF)
-///      │   ├── Card_3     (Image, Raycast Target OFF)
-///      │   └── Card_4     (Image, Raycast Target OFF) ← frontmost
-///      │
-///      ├── GlowOverlay    (Image, centered, size besar ~800x1100)
-///      │                   warna putih, alpha=0, Raycast Target OFF
-///      │
-///      └── SummaryLabel   (TextMeshPro/Text, opsional, "Tap to continue")
-///                          Raycast Target OFF
+///  Scene hierarchy:
+///  ├── Pack             ← has PackController + SwipeDetector
+///  ├── DimBackground    ← SpriteRenderer (black quad, size covers screen)
+///  │                       alpha = 0 at start, sorting order = 5
+///  └── CardRevealRoot   ← empty GameObject, attach THIS script
+///                           sorting order above DimBackground
 ///
-///  Catatan:
-///  - Card_0 s/d Card_4 TANPA sprite awal (dikosongkan, diisi runtime)
-///  - Semua Card preserve aspect: centang "Preserve Aspect" pada Image
-///  - Set "Native Size" pada setiap Card Image setelah assign test sprite
-///  - CardRevealPanel: start DISABLED (SetActive false)
-///  - Wire PackOpenController.OnPackOpened →
-///      1) CardRevealPanel.SetActive(true)
-///      2) CardRevealController.StartReveal()
-///      3) CardPack.SetActive(false) ← opsional, sembunyikan pack
+///  Card prefab:
+///  - Has SpriteRenderer + CardDisplay (already exists in project)
 ///
-/// ═══════════════════════════════════════════════════════════════
+///  Inspector wiring:
+///  - cardPrefab        → your Card.prefab
+///  - dimBackground     → DimBackground SpriteRenderer
+///  - revealAnchor      → world-space Transform at screen centre
+///
+///  PackController calls:
+///    cardRevealController.SetCards(selectedCards);
+///    cardRevealController.StartReveal();
 /// </summary>
 public class CardRevealController : MonoBehaviour
 {
-    // ════════════════════════════════════════════════════════════
-    //  Enums & Data Classes
-    // ════════════════════════════════════════════════════════════
-
-    public enum CardRarity { Normal, Rare, SuperRare }
-
-    [System.Serializable]
-    public class CardSlot
-    {
-        [Tooltip("Sprite kartu yang akan ditampilkan")]
-        public Sprite sprite;
-
-        [Tooltip("Rarity kartu untuk efek visual")]
-        public CardRarity rarity;
-
-        // Diisi otomatis oleh script dari children CardContainer
-        [HideInInspector] public Image image;
-        [HideInInspector] public RectTransform rect;
-        [HideInInspector] public CanvasGroup canvasGroup;
-    }
-
-    private enum State { Inactive, Rising, Ready, RevealAnim, Summary }
-
-    // ════════════════════════════════════════════════════════════
+    // ═══════════════════════════════════════════════════════════════
     //  Inspector Fields
-    // ════════════════════════════════════════════════════════════
+    // ═══════════════════════════════════════════════════════════════
 
-    [Header("=== Card Data (Urutan Reveal: 0=pertama, 4=terakhir) ===")]
-    [SerializeField] private CardSlot[] cardSlots = new CardSlot[5];
+    [Header("References")]
+    [Tooltip("The Card prefab (must have SpriteRenderer + CardDisplay)")]
+    [SerializeField] private GameObject cardPrefab;
 
-    [Header("=== UI References ===")]
-    [Tooltip("Parent RectTransform yang berisi Card_0 s/d Card_4")]
-    [SerializeField] private RectTransform cardContainer;
+    [Tooltip("SpriteRenderer on a black full-screen quad for the dim background")]
+    [SerializeField] private SpriteRenderer dimBackground;
 
-    [Tooltip("Image background panel ini (untuk fade-in gelap)")]
-    [SerializeField] private Image backgroundOverlay;
+    [Tooltip("World-space position that acts as the centre anchor for revealed cards")]
+    [SerializeField] private Transform revealAnchor;
 
-
-
-    [Header("=== Stack Rise Animation ===")]
-    [SerializeField] private float riseFromY       = -1500f;
+    [Header("Stack Rise")]
+    [Tooltip("World Y to start cards from (below screen)")]
+    [SerializeField] private float riseFromY        = -8f;
+    [Tooltip("World Y the front card rests at")]
     [SerializeField] private float riseToY          = 0f;
+    [Tooltip("Duration of the rise animation")]
     [SerializeField] private float riseDuration     = 0.7f;
+    [Tooltip("Delay between each card starting to rise (back to front)")]
     [SerializeField] private float riseStaggerDelay = 0.06f;
     [SerializeField] private AnimationCurve riseCurve =
         AnimationCurve.EaseInOut(0f, 0f, 1f, 1f);
 
-    [Header("=== Stack Layout ===")]
-    [Tooltip("Jarak Y antar kartu yang bertumpuk (negatif = ke bawah)")]
-    [SerializeField] private float stackOffsetY    = -30f;
-    [Tooltip("Pengecilan scale per depth layer")]
-    [SerializeField] private float stackScaleStep  = 0.025f;
+    [Header("Stack Layout")]
+    [Tooltip("World-space Y offset per depth layer (negative = behind card is lower)")]
+    [SerializeField] private float stackOffsetY    = -0.15f;
+    [Tooltip("Scale reduction per depth layer")]
+    [SerializeField] private float stackScaleStep  = 0.03f;
 
-    [Header("=== Peek / Drag ===")]
-    [Tooltip("Jarak horizontal max saat peek")]
-    [SerializeField] private float peekMaxX           = 250f;
-    [Tooltip("Rotasi Z max saat peek (derajat)")]
+    [Header("Peek / Drag")]
+    [Tooltip("Max world-space X offset when peeking")]
+    [SerializeField] private float peekMaxX           = 1.5f;
+    [Tooltip("Max Z rotation in degrees when peeking")]
     [SerializeField] private float peekRotationMax    = 10f;
-    [Tooltip("Kecepatan spring-back saat lepas drag")]
+    [Tooltip("Spring-back speed when finger is lifted")]
     [SerializeField] private float peekSpringSpeed    = 12f;
-    [Tooltip("Parallax factor untuk kartu di belakang (0-1)")]
+    [Tooltip("Parallax factor for cards behind the front one (0–1)")]
     [SerializeField] private float peekParallaxFactor = 0.15f;
-    [Tooltip("Minimal pixel drag sebelum dianggap drag (bukan click)")]
-    [SerializeField] private float clickThreshold     = 15f;
+    [Tooltip("Minimum screen-pixel drag before it counts as a drag (not a click)")]
+    [SerializeField] private float clickThresholdPx   = 15f;
 
-    [Header("=== Reveal Animation ===")]
-    [Tooltip("Scale zoom saat reveal moment")]
-    [SerializeField] private float revealZoomScale    = 1.12f;
+    [Header("Reveal Animation")]
+    [SerializeField] private float revealZoomScale    = 1.1f;
     [SerializeField] private float revealZoomDuration = 0.2f;
-    [Tooltip("Durasi hold sebelum card exit")]
     [SerializeField] private float revealHoldDuration = 0.25f;
     [SerializeField] private float revealExitDuration = 0.35f;
-    [Tooltip("Posisi Y akhir saat kartu keluar (ke atas layar)")]
-    [SerializeField] private float revealExitY        = 1600f;
+    [Tooltip("World Y the card flies out to")]
+    [SerializeField] private float revealExitY        = 10f;
     [SerializeField] private AnimationCurve revealExitCurve =
         AnimationCurve.EaseInOut(0f, 0f, 1f, 1f);
 
-    [Header("=== Summary ===")]
-    [SerializeField] private float summarySpacing       = 320f;
-    [SerializeField] private float summaryCardScale     = 0.55f;
-    [SerializeField] private float summaryAnimDuration   = 0.6f;
-    [SerializeField] private float summaryStaggerDelay   = 0.08f;
+    [Header("Summary")]
+    [Tooltip("World-space X spacing between card centres in summary. Leave 0 to auto-fit across the screen.")]
+    [SerializeField] private float summarySpacingX     = 0f;
+    [Tooltip("Scale of each card in the summary row. Leave 0 to auto-fit.")]
+    [SerializeField] private float summaryCardScale    = 0f;
+    [Tooltip("Fraction of the visible screen width used by all cards together (0–1).")]
+    [SerializeField] private float summaryScreenFill   = 0.85f;
+    [SerializeField] private float summaryAnimDuration  = 0.5f;
+    [SerializeField] private float summaryStaggerDelay  = 0.08f;
     [SerializeField] private AnimationCurve summaryCurve =
         AnimationCurve.EaseInOut(0f, 0f, 1f, 1f);
 
-
-
-    [Header("=== Background ===")]
+    [Header("Dim Background")]
     [SerializeField] private float bgFadeInDuration  = 0.35f;
     [SerializeField] private float bgTargetAlpha     = 0.75f;
 
-    [Header("=== Events ===")]
+    [Header("Events")]
     public UnityEvent OnAllCardsRevealed;
 
-    // ════════════════════════════════════════════════════════════
+    // ═══════════════════════════════════════════════════════════════
     //  Private State
-    // ════════════════════════════════════════════════════════════
+    // ═══════════════════════════════════════════════════════════════
 
-    private State  _state = State.Inactive;
-    private int    _currentIndex;
+    private enum State { Inactive, Rising, Ready, RevealAnim, Summary }
+    private State _state = State.Inactive;
 
-    // Input tracking
+    // The 5 Card GameObjects instantiated at reveal time
+    private GameObject[]    _cardObjects;
+    private SpriteRenderer[] _cardRenderers;
+    private CardDisplay[]    _cardDisplays;
+    private Card[]           _cards;          // data set from PackController
+
+    private int   _currentIndex;
+    private float _resolvedSummaryScale; // actual card scale used in summary (may differ from summaryCardScale when auto-fit is on)
+
+    // Input
     private bool    _pointerDown;
     private Vector2 _pointerDownScreenPos;
     private bool    _isDragging;
     private float   _peekCurrentX;
     private float   _peekTargetX;
 
-    // Canvas reference for coordinate conversion
-    private Canvas        _canvas;
-    private RectTransform _canvasRect;
+    // ═══════════════════════════════════════════════════════════════
+    //  Public API
+    // ═══════════════════════════════════════════════════════════════
 
-    // ════════════════════════════════════════════════════════════
+    /// <summary>
+    /// Called by PackController to pass the selected cards before StartReveal().
+    /// </summary>
+    public void SetCards(Card[] selectedCards)
+    {
+        _cards = selectedCards;
+    }
+
+    /// <summary>
+    /// Call this (from PackController or BottomPackAnimationEvents) to
+    /// begin the card reveal sequence.
+    /// </summary>
+    public void StartReveal()
+    {
+        if (_cards == null || _cards.Length == 0)
+        {
+            Debug.LogError("[CardRevealController] No cards set. Call SetCards() first.");
+            return;
+        }
+
+        _currentIndex = 0;
+        _peekCurrentX = 0f;
+        _peekTargetX  = 0f;
+
+        SpawnCards();
+        StartCoroutine(MainSequence());
+    }
+
+    // ═══════════════════════════════════════════════════════════════
     //  Lifecycle
-    // ════════════════════════════════════════════════════════════
+    // ═══════════════════════════════════════════════════════════════
 
     private void Awake()
     {
-        // Cari Canvas parent
-        _canvas = GetComponentInParent<Canvas>();
-        if (_canvas != null)
-            _canvasRect = _canvas.GetComponent<RectTransform>();
+        // Keep dim background invisible at start
+        if (dimBackground != null)
+        {
+            // Auto-fix: if there is no sprite assigned in the Editor, create a white one
+            // and scale it up massively so it covers the whole screen.
+            if (dimBackground.sprite == null)
+            {
+                Texture2D tex = new Texture2D(1, 1);
+                tex.SetPixel(0, 0, Color.white);
+                tex.Apply();
+                // We set PixelsPerUnit to 1f so the 1x1 pixel texture becomes exactly 1x1 Unity units in world space.
+                // Then scaling it by 100 makes it 100x100 world units, easily covering the camera.
+                dimBackground.sprite = Sprite.Create(tex, new Rect(0, 0, 1, 1), new Vector2(0.5f, 0.5f), 1f);
+                dimBackground.transform.localScale = new Vector3(100f, 100f, 1f);
+            }
 
-        // Cache references dari children cardContainer
-        CacheCardReferences();
+            // Ensure it renders behind the cards (cards use sortingOrder 1..5)
+            dimBackground.sortingOrder = -10;
 
-        // Sembunyikan semua kartu awal
-        HideAllCards();
+            Color c = dimBackground.color;
+            c.a = 0f;
+            dimBackground.color = c;
+            dimBackground.gameObject.SetActive(true);
+        }
     }
 
     private void Update()
@@ -188,116 +209,84 @@ public class CardRevealController : MonoBehaviour
         }
     }
 
-    // ════════════════════════════════════════════════════════════
-    //  Public API
-    // ════════════════════════════════════════════════════════════
+    // ═══════════════════════════════════════════════════════════════
+    //  Card Spawning
+    // ═══════════════════════════════════════════════════════════════
 
-    /// <summary>
-    /// Dipanggil dari PackOpenController.OnPackOpened (wired di Inspector).
-    /// Memulai seluruh sequence card reveal.
-    /// </summary>
-    public void StartReveal()
+    private void SpawnCards()
     {
-        _currentIndex = 0;
-        _peekCurrentX = 0f;
-        _peekTargetX  = 0f;
+        int count = _cards.Length;
+        _cardObjects   = new GameObject[count];
+        _cardRenderers = new SpriteRenderer[count];
+        _cardDisplays  = new CardDisplay[count];
 
-        // Assign sprite ke setiap card image
-        for (int i = 0; i < cardSlots.Length; i++)
+        // Anchor position — use revealAnchor if assigned, otherwise screen centre
+        Vector3 anchor = revealAnchor != null
+            ? revealAnchor.position
+            : Camera.main.ViewportToWorldPoint(new Vector3(0.5f, 0.5f, 10f));
+        anchor.z = 0f;
+
+        for (int i = 0; i < count; i++)
         {
-            if (cardSlots[i].image != null && cardSlots[i].sprite != null)
-            {
-                cardSlots[i].image.sprite = cardSlots[i].sprite;
-                cardSlots[i].image.preserveAspect = true;
-            }
-        }
+            // Instantiate below screen
+            Vector3 spawnPos = new Vector3(anchor.x, riseFromY, 0f);
+            GameObject obj = Instantiate(cardPrefab, spawnPos, Quaternion.identity, transform);
+            obj.SetActive(false);
 
-        StartCoroutine(MainSequence());
-    }
+            _cardObjects[i]   = obj;
+            _cardRenderers[i] = obj.GetComponent<SpriteRenderer>();
+            _cardDisplays[i]  = obj.GetComponent<CardDisplay>();
 
-    // ════════════════════════════════════════════════════════════
-    //  Setup Helpers
-    // ════════════════════════════════════════════════════════════
+            // Assign card artwork via CardDisplay
+            if (_cardDisplays[i] != null)
+                _cardDisplays[i].SetCard(_cards[i]);
+            else if (_cardRenderers[i] != null)
+                _cardRenderers[i].sprite = _cards[i].artwork;
 
-    private void CacheCardReferences()
-    {
-        if (cardContainer == null) return;
-
-        // Ambil semua Image children dari cardContainer
-        // Urutan child di scene: Card_0 (index 0) = backmost → Card_4 (index 4) = frontmost
-        // Mapping: cardSlots[0] = pertama direveal = paling depan = child terakhir
-        int childCount = cardContainer.childCount;
-        int slotCount  = Mathf.Min(cardSlots.Length, childCount);
-
-        for (int i = 0; i < slotCount; i++)
-        {
-            // cardSlots[0] (reveal pertama) = child terakhir (render paling depan)
-            int childIdx = childCount - 1 - i;
-            Transform child = cardContainer.GetChild(childIdx);
-
-            cardSlots[i].image = child.GetComponent<Image>();
-            cardSlots[i].rect  = child.GetComponent<RectTransform>();
-
-            // Set preserve aspect otomatis (tidak perlu set manual di Inspector)
-            if (cardSlots[i].image != null)
-                cardSlots[i].image.preserveAspect = true;
-
-            // Tambahkan CanvasGroup jika belum ada (untuk fade)
-            cardSlots[i].canvasGroup = child.GetComponent<CanvasGroup>();
-            if (cardSlots[i].canvasGroup == null)
-                cardSlots[i].canvasGroup = child.gameObject.AddComponent<CanvasGroup>();
+            // Sorting order: card[0] = front (highest order), card[4] = back (lowest)
+            if (_cardRenderers[i] != null)
+                _cardRenderers[i].sortingOrder = count - i;
         }
     }
 
-    private void HideAllCards()
-    {
-        for (int i = 0; i < cardSlots.Length; i++)
-        {
-            if (cardSlots[i].image != null)
-                cardSlots[i].image.gameObject.SetActive(false);
-        }
-    }
-
-    // ════════════════════════════════════════════════════════════
+    // ═══════════════════════════════════════════════════════════════
     //  Main Sequence
-    // ════════════════════════════════════════════════════════════
+    // ═══════════════════════════════════════════════════════════════
 
     private IEnumerator MainSequence()
     {
-        // 1) Fade-in background gelap
+        // 1) Fade in dim background
         yield return StartCoroutine(FadeInBackground());
 
-        // 2) Kartu naik dari bawah
+        // 2) Cards rise from below
         _state = State.Rising;
         yield return StartCoroutine(StackRise());
 
-        // 3) Ready untuk input
+        // 3) Wait for player to reveal all cards
         _state = State.Ready;
-
-        // Tunggu hingga semua kartu di-reveal
         while (_state != State.Summary)
             yield return null;
 
-        // 4) Summary
+        // 4) Show summary
         yield return StartCoroutine(ShowSummary());
 
-        // 5) Tunggu click terakhir untuk dismiss
+        // 5) Wait for dismiss click
         yield return StartCoroutine(WaitForDismissClick());
 
         OnAllCardsRevealed?.Invoke();
     }
 
-    // ════════════════════════════════════════════════════════════
-    //  Phase 1: Background Fade-In
-    // ════════════════════════════════════════════════════════════
+    // ═══════════════════════════════════════════════════════════════
+    //  Phase 1: Dim Background Fade-In
+    // ═══════════════════════════════════════════════════════════════
 
     private IEnumerator FadeInBackground()
     {
-        if (backgroundOverlay == null) yield break;
+        if (dimBackground == null) yield break;
 
-        Color c = backgroundOverlay.color;
+        Color c = dimBackground.color;
         c.a = 0f;
-        backgroundOverlay.color = c;
+        dimBackground.color = c;
 
         float elapsed = 0f;
         while (elapsed < bgFadeInDuration)
@@ -305,42 +294,40 @@ public class CardRevealController : MonoBehaviour
             elapsed += Time.deltaTime;
             float t = Mathf.Clamp01(elapsed / bgFadeInDuration);
             c.a = Mathf.Lerp(0f, bgTargetAlpha, t);
-            backgroundOverlay.color = c;
+            dimBackground.color = c;
             yield return null;
         }
+
         c.a = bgTargetAlpha;
-        backgroundOverlay.color = c;
+        dimBackground.color = c;
     }
 
-    // ════════════════════════════════════════════════════════════
+    // ═══════════════════════════════════════════════════════════════
     //  Phase 2: Stack Rise
-    // ════════════════════════════════════════════════════════════
+    // ═══════════════════════════════════════════════════════════════
 
     private IEnumerator StackRise()
     {
-        int count = cardSlots.Length;
+        int count = _cardObjects.Length;
 
-        // Setup posisi awal: semua di bawah layar
+        // Get anchor Y
+        Vector3 anchor = GetAnchorWorldPos();
+
+        // Activate all cards, place them below screen
         for (int i = 0; i < count; i++)
         {
-            CardSlot slot = cardSlots[i];
-            if (slot.rect == null) continue;
+            _cardObjects[i].SetActive(true);
 
-            slot.image.gameObject.SetActive(true);
-            slot.canvasGroup.alpha = 1f;
+            float depth   = (float)i;
+            float targetY = anchor.y + riseToY + stackOffsetY * depth;
+            float scale   = 1f - stackScaleStep * depth;
 
-            // Posisi awal: di bawah
-            slot.rect.anchoredPosition = new Vector2(0f, riseFromY);
-
-            // Scale: kartu depan (index 0) paling besar
-            float depth = (float)i;
-            float scale = 1f - stackScaleStep * depth;
-            slot.rect.localScale = new Vector3(scale, scale, 1f);
-
-            slot.rect.localRotation = Quaternion.identity;
+            _cardObjects[i].transform.position   = new Vector3(anchor.x, riseFromY, 0f);
+            _cardObjects[i].transform.localScale  = new Vector3(scale, scale, 1f);
+            _cardObjects[i].transform.rotation    = Quaternion.identity;
         }
 
-        // Animasi naik dengan stagger (dari belakang ke depan)
+        // Rise with stagger — back cards start first
         float totalDuration = riseDuration + riseStaggerDelay * (count - 1);
         float elapsed = 0f;
 
@@ -350,53 +337,47 @@ public class CardRevealController : MonoBehaviour
 
             for (int i = count - 1; i >= 0; i--)
             {
-                if (cardSlots[i].rect == null) continue;
-
-                // Kartu belakang mulai duluan
-                float delay = riseStaggerDelay * (count - 1 - i);
+                float delay    = riseStaggerDelay * (count - 1 - i);
                 float cardTime = Mathf.Clamp01((elapsed - delay) / riseDuration);
-                float curved = riseCurve.Evaluate(cardTime);
+                float curved   = riseCurve.Evaluate(cardTime);
 
                 float depth   = (float)i;
-                float targetY = riseToY + stackOffsetY * depth;
+                float targetY = anchor.y + riseToY + stackOffsetY * depth;
                 float y       = Mathf.LerpUnclamped(riseFromY, targetY, curved);
 
-                cardSlots[i].rect.anchoredPosition = new Vector2(0f, y);
+                Vector3 pos = _cardObjects[i].transform.position;
+                pos.y = y;
+                _cardObjects[i].transform.position = pos;
             }
 
             yield return null;
         }
 
-        // Snap posisi final
         SnapStackPositions();
     }
 
-    /// <summary>
-    /// Posisikan kartu yang tersisa ke posisi stack yang benar.
-    /// </summary>
     private void SnapStackPositions()
     {
-        for (int i = _currentIndex; i < cardSlots.Length; i++)
+        Vector3 anchor = GetAnchorWorldPos();
+        for (int i = _currentIndex; i < _cardObjects.Length; i++)
         {
-            if (cardSlots[i].rect == null) continue;
+            if (_cardObjects[i] == null) continue;
+            float depth   = (float)(i - _currentIndex);
+            float targetY = anchor.y + riseToY + stackOffsetY * depth;
+            float scale   = 1f - stackScaleStep * depth;
 
-            float depthFromFront = (float)(i - _currentIndex);
-            float targetY = riseToY + stackOffsetY * depthFromFront;
-            float scale   = 1f - stackScaleStep * depthFromFront;
-
-            cardSlots[i].rect.anchoredPosition = new Vector2(0f, targetY);
-            cardSlots[i].rect.localScale       = new Vector3(scale, scale, 1f);
-            cardSlots[i].rect.localRotation     = Quaternion.identity;
+            _cardObjects[i].transform.position   = new Vector3(anchor.x, targetY, 0f);
+            _cardObjects[i].transform.localScale  = new Vector3(scale, scale, 1f);
+            _cardObjects[i].transform.rotation    = Quaternion.identity;
         }
     }
 
-    // ════════════════════════════════════════════════════════════
-    //  Phase 3: Input Handling (Peek & Click)
-    // ════════════════════════════════════════════════════════════
+    // ═══════════════════════════════════════════════════════════════
+    //  Phase 3: Input — Peek & Click
+    // ═══════════════════════════════════════════════════════════════
 
     private void HandleInput()
     {
-        // --- Pointer Down ---
         if (Input.GetMouseButtonDown(0))
         {
             _pointerDown          = true;
@@ -404,36 +385,32 @@ public class CardRevealController : MonoBehaviour
             _isDragging           = false;
         }
 
-        // --- Pointer Hold (Drag) ---
         if (_pointerDown && Input.GetMouseButton(0))
         {
-            Vector2 current  = (Vector2)Input.mousePosition;
-            float   deltaX   = current.x - _pointerDownScreenPos.x;
+            Vector2 current = (Vector2)Input.mousePosition;
+            float   deltaX  = current.x - _pointerDownScreenPos.x;
 
-            if (Mathf.Abs(deltaX) > clickThreshold)
+            if (Mathf.Abs(deltaX) > clickThresholdPx)
                 _isDragging = true;
 
             if (_isDragging)
             {
-                // Convert screen pixels ke canvas units
-                float scaleFactor = GetCanvasScaleFactor();
+                // Convert screen-pixel delta to world units
+                float worldPerPixel = GetWorldUnitsPerPixel();
                 _peekTargetX = Mathf.Clamp(
-                    deltaX / scaleFactor, -peekMaxX, peekMaxX);
+                    deltaX * worldPerPixel, -peekMaxX, peekMaxX);
             }
         }
 
-        // --- Pointer Up ---
         if (Input.GetMouseButtonUp(0) && _pointerDown)
         {
             if (!_isDragging)
             {
-                // Short click → Reveal kartu depan
                 _state = State.RevealAnim;
                 StartCoroutine(RevealCurrentCard());
             }
             else
             {
-                // Release drag → spring back
                 _peekTargetX = 0f;
             }
 
@@ -442,86 +419,81 @@ public class CardRevealController : MonoBehaviour
         }
     }
 
-    /// <summary>
-    /// Smooth-update posisi kartu depan berdasarkan peek offset.
-    /// Termasuk parallax untuk kartu di belakangnya.
-    /// </summary>
     private void UpdatePeek()
     {
-        // Spring interpolation
-        _peekCurrentX = Mathf.Lerp(_peekCurrentX, _peekTargetX,
-            Time.deltaTime * peekSpringSpeed);
+        _peekCurrentX = Mathf.Lerp(
+            _peekCurrentX, _peekTargetX, Time.deltaTime * peekSpringSpeed);
 
-        // Toleransi snap ke 0
-        if (!_isDragging && Mathf.Abs(_peekCurrentX) < 0.5f)
+        if (!_isDragging && Mathf.Abs(_peekCurrentX) < 0.01f)
             _peekCurrentX = 0f;
 
-        // Apply ke kartu-kartu
-        for (int i = _currentIndex; i < cardSlots.Length; i++)
+        Vector3 anchor = GetAnchorWorldPos();
+
+        for (int i = _currentIndex; i < _cardObjects.Length; i++)
         {
-            if (cardSlots[i].rect == null) continue;
+            if (_cardObjects[i] == null) continue;
 
-            float depthFromFront = (float)(i - _currentIndex);
-            float targetY = riseToY + stackOffsetY * depthFromFront;
+            float depth   = (float)(i - _currentIndex);
+            float targetY = anchor.y + riseToY + stackOffsetY * depth;
 
-            // Parallax: kartu depan bergerak penuh, belakang lebih sedikit
-            float parallax = 1f;
-            if (depthFromFront > 0f)
-                parallax = peekParallaxFactor / depthFromFront;
+            // Parallax: front card moves fully, cards behind move less
+            float parallax = (depth > 0f)
+                ? peekParallaxFactor / depth
+                : 1f;
 
             float x = _peekCurrentX * parallax;
-            cardSlots[i].rect.anchoredPosition = new Vector2(x, targetY);
+            _cardObjects[i].transform.position = new Vector3(
+                anchor.x + x, targetY, 0f);
 
-            // Rotasi hanya untuk kartu paling depan
+            // Rotation only for the frontmost card
             if (i == _currentIndex)
             {
                 float rotZ = -(_peekCurrentX / peekMaxX) * peekRotationMax;
-                cardSlots[i].rect.localRotation =
-                    Quaternion.Euler(0f, 0f, rotZ);
+                _cardObjects[i].transform.rotation = Quaternion.Euler(0f, 0f, rotZ);
             }
         }
     }
 
-    // ════════════════════════════════════════════════════════════
-    //  Phase 4: Card Reveal (Fly-Out)
-    // ════════════════════════════════════════════════════════════
+    // ═══════════════════════════════════════════════════════════════
+    //  Phase 4: Reveal (Fly-Out)
+    // ═══════════════════════════════════════════════════════════════
 
     private IEnumerator RevealCurrentCard()
     {
-        int idx       = _currentIndex;
-        CardSlot slot = cardSlots[idx];
-        RectTransform rect = slot.rect;
+        int        idx  = _currentIndex;
+        GameObject obj  = _cardObjects[idx];
+        Vector3    anchor = GetAnchorWorldPos();
 
-        // Reset peek ke tengah
+        // Reset peek
         _peekCurrentX = 0f;
         _peekTargetX  = 0f;
-        rect.anchoredPosition = new Vector2(0f, riseToY);
-        rect.localRotation    = Quaternion.identity;
+        obj.transform.position = new Vector3(anchor.x, anchor.y + riseToY, 0f);
+        obj.transform.rotation = Quaternion.identity;
 
-
-
-        // ── Zoom in (reveal moment) ──
-        Vector3 baseScale = rect.localScale;
+        // ── Zoom in ──
+        Vector3 baseScale = obj.transform.localScale;
         Vector3 zoomScale = Vector3.one * revealZoomScale;
         float elapsed = 0f;
 
         while (elapsed < revealZoomDuration)
         {
             elapsed += Time.deltaTime;
-            float t = Mathf.SmoothStep(0f, 1f,
-                Mathf.Clamp01(elapsed / revealZoomDuration));
-            rect.localScale = Vector3.Lerp(baseScale, zoomScale, t);
+            float t = Mathf.SmoothStep(
+                0f, 1f, Mathf.Clamp01(elapsed / revealZoomDuration));
+            obj.transform.localScale = Vector3.Lerp(baseScale, zoomScale, t);
             yield return null;
         }
-        rect.localScale = zoomScale;
+        obj.transform.localScale = zoomScale;
 
-        // ── Hold (dramatic pause) ──
+        // ── Dramatic hold ──
         yield return new WaitForSeconds(revealHoldDuration);
 
-        // ── Exit (fly up + fade out) ──
+        // ── Fly out (up + fade) ──
+        SpriteRenderer sr = _cardRenderers[idx];
         elapsed = 0f;
-        Vector2 startPos = rect.anchoredPosition;
-        Vector2 endPos   = new Vector2(0f, revealExitY);
+        Vector3 startPos = obj.transform.position;
+        Vector3 endPos   = new Vector3(anchor.x, revealExitY, 0f);
+        Color   startCol = sr != null ? sr.color : Color.white;
 
         while (elapsed < revealExitDuration)
         {
@@ -529,53 +501,51 @@ public class CardRevealController : MonoBehaviour
             float t      = Mathf.Clamp01(elapsed / revealExitDuration);
             float curved = revealExitCurve.Evaluate(t);
 
-            rect.anchoredPosition =
-                Vector2.LerpUnclamped(startPos, endPos, curved);
-            rect.localScale =
-                Vector3.Lerp(zoomScale, Vector3.one, t);
-            slot.canvasGroup.alpha = 1f - t;
+            obj.transform.position   = Vector3.LerpUnclamped(startPos, endPos, curved);
+            obj.transform.localScale = Vector3.Lerp(zoomScale, Vector3.one, t);
+
+            if (sr != null)
+            {
+                Color c = startCol;
+                c.a = 1f - t;
+                sr.color = c;
+            }
 
             yield return null;
         }
 
-        // Sembunyikan kartu yang sudah di-reveal
-        slot.image.gameObject.SetActive(false);
-        slot.canvasGroup.alpha = 1f;
+        // Reset alpha, deactivate
+        if (sr != null) { Color c = startCol; c.a = 1f; sr.color = c; }
+        obj.SetActive(false);
 
-        // Next card
         _currentIndex++;
 
-        if (_currentIndex >= cardSlots.Length)
+        if (_currentIndex >= _cardObjects.Length)
         {
-            // Semua kartu sudah di-reveal → summary
             _state = State.Summary;
         }
         else
         {
-            // Animasi sisa kartu bergeser ke depan
             yield return StartCoroutine(ShiftStackForward());
             _state = State.Ready;
         }
     }
 
-    /// <summary>
-    /// Setelah kartu depan keluar, sisa kartu bergeser maju satu posisi.
-    /// </summary>
     private IEnumerator ShiftStackForward()
     {
-        int remaining = cardSlots.Length - _currentIndex;
+        int remaining = _cardObjects.Length - _currentIndex;
+        Vector3 anchor = GetAnchorWorldPos();
         float duration = 0.25f;
         float elapsed  = 0f;
 
-        // Simpan posisi & scale awal
-        Vector2[] startPos   = new Vector2[remaining];
+        Vector3[] startPos   = new Vector3[remaining];
         Vector3[] startScale = new Vector3[remaining];
 
         for (int i = 0; i < remaining; i++)
         {
             int idx = _currentIndex + i;
-            startPos[i]   = cardSlots[idx].rect.anchoredPosition;
-            startScale[i] = cardSlots[idx].rect.localScale;
+            startPos[i]   = _cardObjects[idx].transform.position;
+            startScale[i] = _cardObjects[idx].transform.localScale;
         }
 
         while (elapsed < duration)
@@ -585,16 +555,15 @@ public class CardRevealController : MonoBehaviour
 
             for (int i = 0; i < remaining; i++)
             {
-                int idx = _currentIndex + i;
-                float depthFromFront = (float)i;
-                float targetY        = riseToY + stackOffsetY * depthFromFront;
-                float targetScale    = 1f - stackScaleStep * depthFromFront;
+                int   idx        = _currentIndex + i;
+                float depth      = (float)i;
+                float targetY    = anchor.y + riseToY + stackOffsetY * depth;
+                float targetSc   = 1f - stackScaleStep * depth;
 
-                cardSlots[idx].rect.anchoredPosition =
-                    Vector2.Lerp(startPos[i], new Vector2(0f, targetY), t);
-                cardSlots[idx].rect.localScale =
-                    Vector3.Lerp(startScale[i],
-                        new Vector3(targetScale, targetScale, 1f), t);
+                _cardObjects[idx].transform.position = Vector3.Lerp(
+                    startPos[i], new Vector3(anchor.x, targetY, 0f), t);
+                _cardObjects[idx].transform.localScale = Vector3.Lerp(
+                    startScale[i], new Vector3(targetSc, targetSc, 1f), t);
             }
 
             yield return null;
@@ -603,35 +572,73 @@ public class CardRevealController : MonoBehaviour
         SnapStackPositions();
     }
 
-
-
-    // ════════════════════════════════════════════════════════════
+    // ═══════════════════════════════════════════════════════════════
     //  Phase 5: Summary
-    // ════════════════════════════════════════════════════════════
+    // ═══════════════════════════════════════════════════════════════
 
     private IEnumerator ShowSummary()
     {
-        int count = cardSlots.Length;
-        float totalWidth = summarySpacing * (count - 1);
-        float startX = -totalWidth / 2f;
+        int     count  = _cardObjects.Length;
+        Vector3 anchor = GetAnchorWorldPos();
 
-        // Re-aktifkan semua kartu di tengah, scale 0 (akan di-animasi masuk)
+        // ── Auto-calculate spacing and scale from camera width ──────────
+        float resolvedSpacing = summarySpacingX;
+        float resolvedScale   = summaryCardScale;
+
+        if (resolvedSpacing <= 0f || resolvedScale <= 0f)
+        {
+            // Visible world width of the camera
+            float camHalfWidth = Camera.main.orthographic
+                ? Camera.main.orthographicSize * Camera.main.aspect
+                : Mathf.Tan(Camera.main.fieldOfView * 0.5f * Mathf.Deg2Rad)
+                  * Mathf.Abs(Camera.main.transform.position.z) * Camera.main.aspect;
+
+            float usableWidth = camHalfWidth * 2f * summaryScreenFill;
+
+            // Spacing = usable width divided evenly between card centres
+            if (resolvedSpacing <= 0f)
+                resolvedSpacing = count > 1 ? usableWidth / (count - 1) : 0f;
+
+            // Scale: make each card fit inside its slot (slot width = spacing)
+            // We measure the card's sprite width in world units at scale 1
+            if (resolvedScale <= 0f)
+            {
+                float slotWidth   = count > 1 ? resolvedSpacing : usableWidth;
+                float cardWorldW  = GetCardSpriteWorldWidth();
+                float fitScale    = cardWorldW > 0f ? (slotWidth * 0.9f) / cardWorldW : 0.45f;
+                resolvedScale     = Mathf.Clamp(fitScale, 0.1f, 1.5f);
+            }
+        }
+        // ───────────────────────────────────────────────────────────────
+
+        // Cache the resolved scale so SummaryPulse can use it
+        _resolvedSummaryScale = resolvedScale;
+
+        float totalWidth = resolvedSpacing * (count - 1);
+        float startX     = -totalWidth / 2f;
+
+        // Re-activate all cards at anchor, scale 0
         for (int i = 0; i < count; i++)
         {
-            CardSlot slot = cardSlots[i];
-            slot.image.gameObject.SetActive(true);
-            slot.canvasGroup.alpha        = 1f;
-            slot.rect.anchoredPosition    = Vector2.zero;
-            slot.rect.localScale          = Vector3.zero;
-            slot.rect.localRotation       = Quaternion.identity;
+            _cardObjects[i].SetActive(true);
+            _cardObjects[i].transform.position   = new Vector3(anchor.x, anchor.y, 0f);
+            _cardObjects[i].transform.localScale  = Vector3.zero;
+            _cardObjects[i].transform.rotation    = Quaternion.identity;
 
-            // Reset sibling order: kiri ke kanan
-            slot.image.transform.SetSiblingIndex(i);
+            if (_cardRenderers[i] != null)
+            {
+                Color c = _cardRenderers[i].color;
+                c.a = 1f;
+                _cardRenderers[i].color = c;
+            }
+
+            // Sort left-to-right in the render order
+            if (_cardRenderers[i] != null)
+                _cardRenderers[i].sortingOrder = i + 1;
         }
 
-        // Animate masuk satu per satu (stagger)
-        float totalDuration = summaryAnimDuration +
-            summaryStaggerDelay * (count - 1);
+        // Animate cards spreading out and scaling up
+        float totalDuration = summaryAnimDuration + summaryStaggerDelay * (count - 1);
         float elapsed = 0f;
 
         while (elapsed < totalDuration)
@@ -644,94 +651,155 @@ public class CardRevealController : MonoBehaviour
                 float cardTime = Mathf.Clamp01((elapsed - delay) / summaryAnimDuration);
                 float curved   = summaryCurve.Evaluate(cardTime);
 
-                float targetX = startX + summarySpacing * i;
-                cardSlots[i].rect.anchoredPosition =
-                    Vector2.Lerp(Vector2.zero, new Vector2(targetX, 0f), curved);
-                cardSlots[i].rect.localScale =
-                    Vector3.Lerp(Vector3.zero,
-                        Vector3.one * summaryCardScale, curved);
+                float targetX = anchor.x + startX + resolvedSpacing * i;
+                _cardObjects[i].transform.position = Vector3.Lerp(
+                    new Vector3(anchor.x, anchor.y, 0f),
+                    new Vector3(targetX, anchor.y, 0f), curved);
+
+                float sc = Mathf.Lerp(0f, resolvedScale, curved);
+                _cardObjects[i].transform.localScale = new Vector3(sc, sc, 1f);
             }
 
             yield return null;
         }
 
-        // Snap final
+        // Snap final positions
         for (int i = 0; i < count; i++)
         {
-            float targetX = startX + summarySpacing * i;
-            cardSlots[i].rect.anchoredPosition = new Vector2(targetX, 0f);
-            cardSlots[i].rect.localScale       = Vector3.one * summaryCardScale;
+            float targetX = anchor.x + startX + resolvedSpacing * i;
+            _cardObjects[i].transform.position  = new Vector3(targetX, anchor.y, 0f);
+            _cardObjects[i].transform.localScale = Vector3.one * resolvedScale;
         }
 
-        // Pulse animasi untuk kartu rare/SR
+        // Subtle pulse for Rare / SuperRare cards
         for (int i = 0; i < count; i++)
         {
-            if (cardSlots[i].rarity != CardRarity.Normal)
+            if (_cards[i].rarity != CardRarity.Normal)
                 StartCoroutine(SummaryPulse(i));
         }
     }
 
-    /// <summary>
-    /// Subtle scale pulse untuk kartu rare/SR di summary view.
-    /// </summary>
     private IEnumerator SummaryPulse(int slotIndex)
     {
-        CardSlot slot = cardSlots[slotIndex];
-        float baseScale   = summaryCardScale;
-        float pulseAmount = slot.rarity == CardRarity.SuperRare ? 0.035f : 0.02f;
-        float speed       = slot.rarity == CardRarity.SuperRare ? 2.5f  : 1.8f;
+        // Use the resolved scale (auto-computed), NOT summaryCardScale which may be 0
+        float baseScale   = _resolvedSummaryScale;
+        float pulseAmount = _cards[slotIndex].rarity == CardRarity.SuperRare ? 0.04f : 0.02f;
+        float speed       = _cards[slotIndex].rarity == CardRarity.SuperRare ? 2.5f  : 1.8f;
 
         while (_state == State.Summary)
         {
-            float t     = Time.time * speed + slotIndex; // phase offset
+            float t     = Time.time * speed + slotIndex;
             float scale = baseScale + Mathf.Sin(t * Mathf.PI) * pulseAmount;
-            slot.rect.localScale = new Vector3(scale, scale, 1f);
+            _cardObjects[slotIndex].transform.localScale = new Vector3(scale, scale, 1f);
             yield return null;
         }
     }
 
-    // ════════════════════════════════════════════════════════════
-    //  Dismiss (Click Terakhir)
-    // ════════════════════════════════════════════════════════════
+    // ═══════════════════════════════════════════════════════════════
+    //  Dismiss
+    // ═══════════════════════════════════════════════════════════════
 
     private IEnumerator WaitForDismissClick()
     {
-        // Tunggu beberapa frame agar tidak langsung ter-trigger
+        // Skip a couple frames so the last click doesn't trigger dismiss immediately
         yield return null;
         yield return null;
 
-        // Tunggu player click
         while (!Input.GetMouseButtonDown(0))
             yield return null;
 
-        // Fade out semua
+        // Fade out everything
         float fadeDuration = 0.4f;
-        float elapsed = 0f;
+        float elapsed      = 0f;
 
-        CanvasGroup panelCG = GetComponent<CanvasGroup>();
-        if (panelCG == null) panelCG = gameObject.AddComponent<CanvasGroup>();
+        Color bgColor = dimBackground != null ? dimBackground.color : Color.black;
 
         while (elapsed < fadeDuration)
         {
             elapsed += Time.deltaTime;
             float t = Mathf.Clamp01(elapsed / fadeDuration);
-            panelCG.alpha = 1f - t;
+
+            if (dimBackground != null)
+            {
+                Color c = bgColor;
+                c.a = Mathf.Lerp(bgTargetAlpha, 0f, t);
+                dimBackground.color = c;
+            }
+
+            foreach (SpriteRenderer sr in _cardRenderers)
+            {
+                if (sr == null) continue;
+                Color c = sr.color;
+                c.a = 1f - t;
+                sr.color = c;
+            }
+
             yield return null;
         }
 
-        _state = State.Inactive;
-        panelCG.alpha = 1f;
-        gameObject.SetActive(false);
+        // Clean up spawned cards
+        foreach (GameObject obj in _cardObjects)
+        {
+            if (obj != null)
+                Destroy(obj);
+        }
+
+        _cardObjects   = null;
+        _cardRenderers = null;
+        _cardDisplays  = null;
+        _state         = State.Inactive;
+        SceneManager.LoadScene("Collection");
+
+        
     }
 
-    // ════════════════════════════════════════════════════════════
+    // ═══════════════════════════════════════════════════════════════
     //  Utility
-    // ════════════════════════════════════════════════════════════
+    // ═══════════════════════════════════════════════════════════════
 
-    private float GetCanvasScaleFactor()
+    /// <summary>Returns the world-space anchor position for card placement.</summary>
+    private Vector3 GetAnchorWorldPos()
     {
-        if (_canvas != null)
-            return _canvas.scaleFactor;
-        return 1f;
+        if (revealAnchor != null)
+            return new Vector3(revealAnchor.position.x, revealAnchor.position.y, 0f);
+
+        // Fallback: world-space centre of the camera view
+        Vector3 p = Camera.main.ViewportToWorldPoint(new Vector3(0.5f, 0.5f, 10f));
+        p.z = 0f;
+        return p;
+    }
+
+    /// <summary>Returns how many world units correspond to one screen pixel.</summary>
+    private float GetWorldUnitsPerPixel()
+    {
+        Camera cam = Camera.main;
+        if (cam == null) return 0.01f;
+
+        if (cam.orthographic)
+            return (cam.orthographicSize * 2f) / Screen.height;
+
+        // Perspective fallback
+        float distToAnchor = Mathf.Abs(cam.transform.position.z - 0f);
+        float halfHeight   = Mathf.Tan(cam.fieldOfView * 0.5f * Mathf.Deg2Rad) * distToAnchor;
+        return (halfHeight * 2f) / Screen.height;
+    }
+
+    /// <summary>
+    /// Returns the world-space width of the card sprite at scale 1.
+    /// Uses the first card renderer's sprite to measure. Falls back to 0 if unavailable.
+    /// </summary>
+    private float GetCardSpriteWorldWidth()
+    {
+        // Try to get sprite from the first instantiated card
+        for (int i = 0; i < _cardRenderers.Length; i++)
+        {
+            if (_cardRenderers[i] != null && _cardRenderers[i].sprite != null)
+            {
+                Sprite s = _cardRenderers[i].sprite;
+                // sprite.bounds gives the local-space size at scale 1
+                return s.bounds.size.x;
+            }
+        }
+        return 0f;
     }
 }

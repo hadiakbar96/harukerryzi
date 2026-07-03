@@ -23,6 +23,8 @@ public class PackOpenController : MonoBehaviour
     [SerializeField] private SpriteRenderer topPiece;
     [SerializeField] private SpriteRenderer bottomPiece;
     [SerializeField] private SpriteRenderer cardPiece;
+    [Tooltip("Drag the Pack_Container object here (the one with the Animator)")]
+    [SerializeField] private Animator packAnimator;
 
     [Header("Idle Bob")]
     [SerializeField] private bool  enableIdleBob = true;
@@ -105,6 +107,10 @@ public class PackOpenController : MonoBehaviour
             StopCoroutine(_bobCoroutine);
         transform.position   = _originalPosition;
         transform.localScale = Vector3.one;
+
+        // Fire the Zoom trigger → CameraZoomIn → PackOpen plays via Animator
+        if (packAnimator != null)
+            packAnimator.SetTrigger("Zoom");
 
         // 1 — Shake
         yield return StartCoroutine(Shake());

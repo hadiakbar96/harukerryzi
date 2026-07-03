@@ -35,6 +35,15 @@ namespace Harukerryzi.Clash
         [SerializeField, Min(0f)] private float nextRoundDelay = 1f;
         [SerializeField, Min(0f)] private float rewardShowDelay = 0.65f;
 
+        [Header("Audio")]
+        [SerializeField] private AudioClip battleMusic;
+        [SerializeField] private AudioClip finalBattleMusic;
+        [SerializeField] private AudioClip announcerFightSfx;
+        [SerializeField] private AudioClip clashSfx;
+        [SerializeField] private AudioClip victorySfx;
+        [SerializeField] private AudioClip defeatSfx;
+        [SerializeField, Min(0f)] private float announcerLeadTime = 0.7f;
+
         private int playerScore;
         private int aiScore;
         private int roundNumber = 1;
@@ -112,6 +121,12 @@ namespace Harukerryzi.Clash
             EnsureResultUI();
             EnsureRewardUI();
 
+            if (scoreUI != null)
+            {
+                scoreUI.gameObject.SetActive(true);
+            }
+
+            PlayBattleMusic();
             RestartMinigame();
         }
 
@@ -188,6 +203,20 @@ namespace Harukerryzi.Clash
 
         private void StartClashRound()
         {
+            StartCoroutine(StartClashRoundRoutine());
+        }
+
+        private IEnumerator StartClashRoundRoutine()
+        {
+            if (announcerFightSfx != null)
+            {
+                GameAudio.PlaySfx(announcerFightSfx);
+                if (announcerLeadTime > 0f)
+                {
+                    yield return new WaitForSecondsRealtime(announcerLeadTime);
+                }
+            }
+
             float playerPower = basePlayerPower * GetMultiplier(selectedPlayerItem);
             float aiPower = GetAiBasePower() * GetMultiplier(selectedAiItem);
             ConfigureAiInput();
@@ -198,6 +227,7 @@ namespace Harukerryzi.Clash
             SetClashBackgroundShakeEnabled(false);
             stageLayout?.SetBattleHandsAnimationEnabled(false);
             SetBattleHandsVisible(false);
+            GameAudio.PlaySfx(clashSfx);
             entranceUI?.ShowClashHands(GetClashHandsSprite(), enemyConfig != null ? enemyConfig.ClashHandsScale : 1f);
             if (winFxUI != null && entranceUI != null)
             {
@@ -205,6 +235,13 @@ namespace Harukerryzi.Clash
             }
             stageLayout?.TransitionToClashSquare();
             clashController?.Init(playerPower, aiPower);
+        }
+
+        private void PlayBattleMusic()
+        {
+            bool isFinalStage = enemyConfig != null && enemyConfig.Level >= 2;
+            AudioClip clip = isFinalStage && finalBattleMusic != null ? finalBattleMusic : battleMusic;
+            GameAudio.PlayMusic(clip);
         }
 
         private void OnClashFinished(ClashResult result)
@@ -239,6 +276,7 @@ namespace Harukerryzi.Clash
             if (matchDeciding)
             {
                 bool playerWon = playerScore > aiScore;
+                GameAudio.PlaySfx(playerWon ? victorySfx : defeatSfx);
                 StartCoroutine(ShowRewardAfterFullScreen(playerWon));
                 return;
             }
@@ -583,6 +621,36 @@ namespace Harukerryzi.Clash
             {
                 clashBackgroundUI.gameObject.AddComponent<ClashHandShake>();
             }
+
+            PlaceClashBackgroundInPlayArea();
+        }
+
+        private void PlaceClashBackgroundInPlayArea()
+        {
+            // The background must live inside playArea (below the entrance hands and the
+            // side score panels). If the saved scene has it on the canvas root it would
+            // draw full-width above the entrance hands and hide them, so enforce it here.
+            if (clashBackgroundUI == null || stageLayout == null || stageLayout.PlayArea == null)
+            {
+                return;
+            }
+
+            RectTransform backgroundRect = clashBackgroundUI.transform as RectTransform;
+            if (backgroundRect == null)
+            {
+                return;
+            }
+
+            if (backgroundRect.parent != stageLayout.PlayArea)
+            {
+                backgroundRect.SetParent(stageLayout.PlayArea, false);
+            }
+
+            backgroundRect.anchorMin = Vector2.zero;
+            backgroundRect.anchorMax = Vector2.one;
+            backgroundRect.offsetMin = Vector2.zero;
+            backgroundRect.offsetMax = Vector2.zero;
+            backgroundRect.SetAsFirstSibling();
         }
 
         private void PlaceEntranceUiInPlayArea()
@@ -592,11 +660,21 @@ namespace Harukerryzi.Clash
                 return;
             }
 
-            // Entrance UI must be on Canvas root, not playArea (which is clipped to 1080x1080).
-            GameObject canvasObject = GameObject.Find("ClashCanvas");
-            if (canvasObject == null)
+            // Parent under playArea so the oversized clash hands get clipped to the
+            // 1:1 square by its RectMask2D instead of covering the side score panels.
+            Transform parent = stageLayout != null && stageLayout.PlayArea != null
+                ? stageLayout.PlayArea
+                : null;
+
+            if (parent == null)
             {
-                return;
+                GameObject canvasObject = GameObject.Find("ClashCanvas");
+                if (canvasObject == null)
+                {
+                    return;
+                }
+
+                parent = canvasObject.transform;
             }
 
             RectTransform entranceRect = entranceUI.transform as RectTransform;
@@ -605,7 +683,7 @@ namespace Harukerryzi.Clash
                 return;
             }
 
-            entranceRect.SetParent(canvasObject.transform, false);
+            entranceRect.SetParent(parent, false);
             entranceRect.anchorMin = Vector2.zero;
             entranceRect.anchorMax = Vector2.one;
             entranceRect.offsetMin = Vector2.zero;

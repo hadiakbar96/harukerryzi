@@ -14,6 +14,10 @@ public sealed class TitleScreenController : MonoBehaviour
     [SerializeField] private string stageMapSceneName = "StageMap";
     [SerializeField] private string collectionSceneName = "Collection";
 
+    [Header("Audio")]
+    [SerializeField] private AudioClip backgroundMusic;
+    [SerializeField] private AudioClip clickSfx;
+
     private const string SEED_KEY = "Harukerryzi.Seeded";
     private const string STARTER_CARD = "NormalCard";
 
@@ -41,6 +45,7 @@ public sealed class TitleScreenController : MonoBehaviour
         SeedFirstTime();
         WirePlayButton();
         WireCollectionButton();
+        GameAudio.PlayMusic(backgroundMusic);
     }
 
     private void Update()
@@ -142,12 +147,14 @@ public sealed class TitleScreenController : MonoBehaviour
 
     private void OnPlayClicked()
     {
+        GameAudio.PlaySfx(clickSfx);
         PlayerPrefs.SetInt(OpeningStoryController.IntroSeenKey, 1);
         LoadScene(stageMapSceneName);
     }
 
     private void OnCollectionClicked()
     {
+        GameAudio.PlaySfx(clickSfx);
         LoadScene(collectionSceneName);
     }
 

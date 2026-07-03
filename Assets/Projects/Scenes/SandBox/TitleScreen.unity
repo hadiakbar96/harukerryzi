@@ -266,6 +266,7 @@ MonoBehaviour:
   scaleOnHover: 1
   hoverScale: 1.08
   scaleSpeed: 12
+  hoverSfx: {fileID: 8300000, guid: a43761ecf3bee4c1a868168d78dea0f8, type: 3}
 --- !u!114 &517978552
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -434,6 +435,7 @@ MonoBehaviour:
   scaleOnHover: 1
   hoverScale: 1.08
   scaleSpeed: 12
+  hoverSfx: {fileID: 8300000, guid: a43761ecf3bee4c1a868168d78dea0f8, type: 3}
 --- !u!114 &1040016203
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -527,6 +529,7 @@ MonoBehaviour:
   scaleOnHover: 1
   hoverScale: 1.08
   scaleSpeed: 12
+  hoverSfx: {fileID: 8300000, guid: a43761ecf3bee4c1a868168d78dea0f8, type: 3}
 --- !u!114 &1412173548
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -656,6 +659,7 @@ GameObject:
   - component: {fileID: 1785270936}
   - component: {fileID: 1785270935}
   - component: {fileID: 1785270934}
+  - component: {fileID: 2120000001}
   m_Layer: 0
   m_Name: Canvas
   m_TagString: Untagged
@@ -749,6 +753,25 @@ RectTransform:
   m_AnchoredPosition: {x: 0, y: 0}
   m_SizeDelta: {x: 0, y: 0}
   m_Pivot: {x: 0, y: 0}
+--- !u!114 &2120000001
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1785270933}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 99b1912292554eae8526581067d3700a, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  playButtonRect: {fileID: 0}
+  collectionButtonRect: {fileID: 0}
+  openingStorySceneName: OpeningStory
+  stageMapSceneName: StageMap
+  collectionSceneName: Collection
+  backgroundMusic: {fileID: 8300000, guid: df229baafd5114d53a3c3a88102406e8, type: 3}
+  clickSfx: {fileID: 8300000, guid: 5f1c6603be210487e8866d4cbf78efde, type: 3}
 --- !u!1660057539 &9223372036854775807
 SceneRoots:
   m_ObjectHideFlags: 0

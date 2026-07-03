@@ -31,6 +31,10 @@ public class ButtonHover : MonoBehaviour, IPointerEnterHandler, IPointerExitHand
     [Tooltip("Kecepatan transisi scale")]
     [SerializeField] private float scaleSpeed = 10f;
 
+    [Header("Audio")]
+    [Tooltip("SFX saat mouse masuk ke tombol")]
+    [SerializeField] private AudioClip hoverSfx;
+
     private Image _image;
     private Vector3 _originalScale;
     private Vector3 _targetScale;
@@ -55,6 +59,8 @@ public class ButtonHover : MonoBehaviour, IPointerEnterHandler, IPointerExitHand
 
     public void OnPointerEnter(PointerEventData eventData)
     {
+        GameAudio.PlaySfx(hoverSfx);
+
         if (_image != null && hoveredSprite != null)
             _image.sprite = hoveredSprite;
 

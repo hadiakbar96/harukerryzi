@@ -260,6 +260,8 @@ MonoBehaviour:
   typeSpeed: 0.03
   fadeDuration: 1
   slideDuration: 0.6
+  battleSceneName: ClashScene
+  tikusEnemyConfig: {fileID: 0}
 --- !u!1 &238211849
 GameObject:
   m_ObjectHideFlags: 0
@@ -810,7 +812,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_Sprite: {fileID: 8574651155694835425, guid: eb43b00c20af9451ca0f961a3e161d9c, type: 3}
+  m_Sprite: {fileID: 8574651155694835425, guid: dd47974f69fe94f7a9cdb712c651b3a6, type: 3}
   m_Type: 0
   m_PreserveAspect: 1
   m_FillCenter: 1
@@ -1268,8 +1270,8 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0.5, y: 0}
   m_AnchorMax: {x: 0.5, y: 0}
-  m_AnchoredPosition: {x: 193.5, y: -18.599976}
-  m_SizeDelta: {x: 1100, y: 200}
+  m_AnchoredPosition: {x: 15.3, y: -18.599976}
+  m_SizeDelta: {x: 732.3, y: 200}
   m_Pivot: {x: 0.5, y: 0}
 --- !u!1 &1007432421
 GameObject:

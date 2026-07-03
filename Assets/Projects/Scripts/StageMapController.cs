@@ -25,6 +25,9 @@ public sealed class StageMapController : MonoBehaviour
     [SerializeField] private AduTosEnemyConfig[] stageEnemies;
     [SerializeField] private string battleSceneName = "ClashScene";
 
+    [Header("Audio")]
+    [SerializeField] private AudioClip backgroundMusic;
+
     [Header("Sprites")]
     [SerializeField] private Sprite level1Sprite;
     [SerializeField] private Sprite level1SelectedSprite;
@@ -73,6 +76,7 @@ public sealed class StageMapController : MonoBehaviour
 
     private void Start()
     {
+        GameAudio.PlayMusic(backgroundMusic);
 #if UNITY_EDITOR
         EnsureEditorSpriteFallbacks();
 #endif

@@ -25,6 +25,9 @@ namespace Harukerryzi.Clash
         [SerializeField, Min(0f)] private float enemyTargetScale = 1.08f;
         [SerializeField, Min(0f)] private float betweenShotsDelay = 0.2f;
 
+        [Header("Audio")]
+        [SerializeField] private AudioClip handAppearSfx;
+
         private Coroutine sequence;
 
         public RectTransform ClashHandsRect => mcHand;
@@ -167,6 +170,7 @@ namespace Harukerryzi.Clash
 
         private IEnumerator PlayHandShot(Image image, RectTransform hand, Vector2 start, Vector2 target, float targetScale)
         {
+            GameAudio.PlaySfx(handAppearSfx);
             SetGraphicVisible(image, true);
             SetHand(hand, start, Vector3.one * 0.86f);
 

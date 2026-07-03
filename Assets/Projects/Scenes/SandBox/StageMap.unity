@@ -755,6 +755,7 @@ MonoBehaviour:
   - {fileID: 11400000, guid: 4e980e9e8e4124938b89b15b24e71edd, type: 2}
   - {fileID: 11400000, guid: f5bfb72a0b240468193ec6ef25655ba2, type: 2}
   battleSceneName: ClashScene
+  backgroundMusic: {fileID: 8300000, guid: df229baafd5114d53a3c3a88102406e8, type: 3}
   level1Sprite: {fileID: 21300000, guid: ec7e25b44aee0422f854b4e61a4ab3cc, type: 3}
   level1SelectedSprite: {fileID: 21300000, guid: b545ffe2b2cf74d7ca11da7160a1112e, type: 3}
   level2Sprite: {fileID: 21300000, guid: f5a518009f6584f7ab804af86896110a, type: 3}

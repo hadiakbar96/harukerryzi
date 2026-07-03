@@ -1,4 +1,5 @@
 using System.Collections;
+using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 using UnityEngine.UI;
@@ -11,8 +12,8 @@ namespace Harukerryzi.Clash
     public sealed class AduTosMinigameController : MonoBehaviour
     {
         [SerializeField] private ClashController clashController;
-        [SerializeField] private CardSelectionUI cardSelectionUI;
-        [SerializeField] private CardRevealUI cardRevealUI;
+        [SerializeField] private ItemSelectionUI itemSelectionUI;
+        [SerializeField] private ItemRevealUI itemRevealUI;
         [SerializeField] private MinigameScoreUI scoreUI;
         [SerializeField] private MinigameResultUI resultUI;
         [SerializeField] private RewardUI rewardUI;
@@ -25,7 +26,7 @@ namespace Harukerryzi.Clash
         [SerializeField] private AduTosEnemyConfig enemyConfig;
         [SerializeField] private string stageMapSceneName = "StageMap";
         [SerializeField] private Sprite mcHandSprite;
-        [SerializeField] private ClashCardConfig[] availableCards;
+        [SerializeField] private ClashItemConfig[] availableItems;
         [SerializeField, Min(0f)] private float basePlayerPower = 10f;
         [SerializeField, Min(0f)] private float baseAiPower = 10f;
         [SerializeField, Min(0f)] private float fallbackAiMashesPerSecond = 4f;
@@ -37,8 +38,8 @@ namespace Harukerryzi.Clash
         private int playerScore;
         private int aiScore;
         private int roundNumber = 1;
-        private ClashCardConfig selectedPlayerCard;
-        private ClashCardConfig selectedAiCard;
+        private ClashItemConfig selectedPlayerItem;
+        private ClashItemConfig selectedAiItem;
 
         private void OnEnable()
         {
@@ -83,7 +84,8 @@ namespace Harukerryzi.Clash
             }
 #endif
 
-            EnsureRuntimeCards();
+            EnsureRuntimeItems();
+            EnsureItemSelectionUI();
 
             if (aiInput == null)
             {
@@ -125,36 +127,58 @@ namespace Harukerryzi.Clash
             clashController?.ResetClash();
             UpdateScore();
             stageLayout?.ShowFullBackgroundImmediate();
-            StartCardSelection();
+            StartItemSelection();
         }
 
-        private void StartCardSelection()
+        private void StartItemSelection()
         {
             clashController?.ResetClash();
             mashButtonUI?.SetMashEnabled(false);
-            cardRevealUI?.Hide();
+            itemRevealUI?.Hide();
             winFxUI?.ResetPushTarget();
             clashBackgroundUI?.SetBackground(GetClashBackgroundSprite());
             stageLayout?.SetBattleHandsAnimationEnabled(false);
             SetBattleHandsVisible(false);
             entranceUI?.HideImmediate();
             stageLayout?.TransitionToFullBackground();
-            cardSelectionUI?.Show(availableCards, OnPlayerSelectedCard);
+            itemSelectionUI?.Show(availableItems, OnPlayerSelectedItem);
         }
 
-        private void OnPlayerSelectedCard(ClashCardConfig card)
+        private void OnPlayerSelectedItem(ClashItemConfig item)
         {
-            selectedPlayerCard = card;
-            selectedAiCard = PickAiCard();
-            cardSelectionUI?.Hide();
-            cardRevealUI?.Hide();
+            selectedPlayerItem = item;
+            selectedAiItem = PickAiItem();
+            itemSelectionUI?.Hide();
+            itemRevealUI?.Hide();
             PlayEntranceThenClash();
         }
 
         private void PlayEntranceThenClash()
         {
-            if (entranceUI == null || mcHandSprite == null || enemyConfig == null || enemyConfig.EnemyHandSprite == null)
+            if (entranceUI == null)
             {
+                Debug.LogWarning("[AduTos] entranceUI is null, skipping entrance");
+                StartClashRound();
+                return;
+            }
+
+            if (mcHandSprite == null)
+            {
+                Debug.LogWarning("[AduTos] mcHandSprite is null, skipping entrance");
+                StartClashRound();
+                return;
+            }
+
+            if (enemyConfig == null)
+            {
+                Debug.LogWarning("[AduTos] enemyConfig is null, skipping entrance");
+                StartClashRound();
+                return;
+            }
+
+            if (enemyConfig.EnemyHandSprite == null)
+            {
+                Debug.LogWarning("[AduTos] enemyConfig.EnemyHandSprite is null, skipping entrance");
                 StartClashRound();
                 return;
             }
@@ -164,8 +188,8 @@ namespace Harukerryzi.Clash
 
         private void StartClashRound()
         {
-            float playerPower = basePlayerPower * GetMultiplier(selectedPlayerCard);
-            float aiPower = GetAiBasePower() * GetMultiplier(selectedAiCard);
+            float playerPower = basePlayerPower * GetMultiplier(selectedPlayerItem);
+            float aiPower = GetAiBasePower() * GetMultiplier(selectedAiItem);
             ConfigureAiInput();
             mashButtonUI?.SetMashEnabled(true);
             Sprite clashBackground = GetClashBackgroundSprite();
@@ -276,6 +300,12 @@ namespace Harukerryzi.Clash
                 return enemyConfig.ClashBackgroundSprite;
             }
 
+            if (enemyConfig != null)
+            {
+                Sprite loaded = Resources.Load<Sprite>("BattleSprites/battle_" + GetEnemyPrefix(enemyConfig.Level));
+                if (loaded != null) return loaded;
+            }
+
 #if UNITY_EDITOR
             if (enemyConfig == null)
             {
@@ -305,6 +335,12 @@ namespace Harukerryzi.Clash
                 return enemyConfig.ClashHandsSprite;
             }
 
+            if (enemyConfig != null)
+            {
+                Sprite loaded = Resources.Load<Sprite>("BattleSprites/Sprite_Battle_MCvs" + Capitalize(GetEnemyPrefix(enemyConfig.Level)));
+                if (loaded != null) return loaded;
+            }
+
 #if UNITY_EDITOR
             if (enemyConfig == null)
             {
@@ -325,6 +361,23 @@ namespace Harukerryzi.Clash
 #else
             return null;
 #endif
+        }
+
+        private static string GetEnemyPrefix(int level)
+        {
+            switch (level)
+            {
+                case 0: return "tikus";
+                case 1: return "kunti";
+                case 2: return "tiang";
+                default: return "tikus";
+            }
+        }
+
+        private static string Capitalize(string s)
+        {
+            if (string.IsNullOrEmpty(s)) return s;
+            return char.ToUpper(s[0]) + s.Substring(1);
         }
 
 #if UNITY_EDITOR
@@ -373,6 +426,7 @@ namespace Harukerryzi.Clash
 
         private void ClaimRewardAndReturnToMap(bool playerWon)
         {
+            CurrencyWallet.AddCoins(GetReward(playerWon));
             BattleSession.SetResult(playerWon);
 
             if (string.IsNullOrWhiteSpace(stageMapSceneName))
@@ -404,28 +458,28 @@ namespace Harukerryzi.Clash
         private IEnumerator NextRoundAfterDelay()
         {
             yield return new WaitForSecondsRealtime(nextRoundDelay);
-            StartCardSelection();
+            StartItemSelection();
         }
 
-        private ClashCardConfig PickAiCard()
+        private ClashItemConfig PickAiItem()
         {
-            ClashCardConfig[] aiCardPool = GetAiCardPool();
-            if (aiCardPool == null || aiCardPool.Length == 0)
+            ClashItemConfig[] aiItemPool = GetAiItemPool();
+            if (aiItemPool == null || aiItemPool.Length == 0)
             {
                 return null;
             }
 
-            return aiCardPool[Random.Range(0, aiCardPool.Length)];
+            return aiItemPool[Random.Range(0, aiItemPool.Length)];
         }
 
-        private ClashCardConfig[] GetAiCardPool()
+        private ClashItemConfig[] GetAiItemPool()
         {
-            if (enemyConfig != null && enemyConfig.CardPool != null && enemyConfig.CardPool.Length > 0)
+            if (enemyConfig != null && enemyConfig.ItemPool != null && enemyConfig.ItemPool.Length > 0)
             {
-                return enemyConfig.CardPool;
+                return enemyConfig.ItemPool;
             }
 
-            return availableCards;
+            return availableItems;
         }
 
         private float GetAiBasePower()
@@ -450,6 +504,36 @@ namespace Harukerryzi.Clash
             scoreUI?.SetScore(playerScore, aiScore, roundNumber);
         }
 
+        private void EnsureItemSelectionUI()
+        {
+            if (itemSelectionUI != null)
+            {
+                return;
+            }
+
+            itemSelectionUI = FindFirstObjectByType<ItemSelectionUI>();
+            if (itemSelectionUI != null)
+            {
+                return;
+            }
+
+            GameObject canvasObject = GameObject.Find("ClashCanvas");
+            if (canvasObject == null)
+            {
+                return;
+            }
+
+            GameObject selectionObject = new("ItemSelectionUI");
+            selectionObject.transform.SetParent(canvasObject.transform, false);
+            RectTransform rect = selectionObject.AddComponent<RectTransform>();
+            rect.anchorMin = Vector2.zero;
+            rect.anchorMax = Vector2.one;
+            rect.offsetMin = Vector2.zero;
+            rect.offsetMax = Vector2.zero;
+            selectionObject.AddComponent<CanvasGroup>();
+            itemSelectionUI = selectionObject.AddComponent<ItemSelectionUI>();
+        }
+
         private void EnsureBattleVisuals()
         {
             GameObject canvasObject = GameObject.Find("ClashCanvas");
@@ -466,7 +550,7 @@ namespace Harukerryzi.Clash
             if (entranceUI == null)
             {
                 GameObject entranceObject = new("AduTosEntranceUI");
-                entranceObject.transform.SetParent(stageLayout != null && stageLayout.PlayArea != null ? stageLayout.PlayArea : canvasObject.transform, false);
+                entranceObject.transform.SetParent(canvasObject.transform, false);
                 RectTransform entranceRect = entranceObject.AddComponent<RectTransform>();
                 entranceRect.anchorMin = Vector2.zero;
                 entranceRect.anchorMax = Vector2.one;
@@ -503,7 +587,14 @@ namespace Harukerryzi.Clash
 
         private void PlaceEntranceUiInPlayArea()
         {
-            if (entranceUI == null || stageLayout == null || stageLayout.PlayArea == null)
+            if (entranceUI == null)
+            {
+                return;
+            }
+
+            // Entrance UI must be on Canvas root, not playArea (which is clipped to 1080x1080).
+            GameObject canvasObject = GameObject.Find("ClashCanvas");
+            if (canvasObject == null)
             {
                 return;
             }
@@ -514,7 +605,7 @@ namespace Harukerryzi.Clash
                 return;
             }
 
-            entranceRect.SetParent(stageLayout.PlayArea, false);
+            entranceRect.SetParent(canvasObject.transform, false);
             entranceRect.anchorMin = Vector2.zero;
             entranceRect.anchorMax = Vector2.one;
             entranceRect.offsetMin = Vector2.zero;
@@ -654,45 +745,123 @@ namespace Harukerryzi.Clash
             }
         }
 
-        private void EnsureRuntimeCards()
+        private void EnsureRuntimeItems()
         {
-            if (availableCards != null && availableCards.Length >= 15)
+            if (availableItems != null && availableItems.Length > 0)
             {
                 return;
             }
 
-            ClashCardConfig[] runtimeCards = new ClashCardConfig[15];
-            int index = 0;
+            LoadAllItemConfigs();
 
-            for (int i = 1; i <= 5; i++)
+            CardDatabase cardDatabase = FindCardDatabase();
+
+            Dictionary<string, int> owned = CardInventory.GetAllEntries();
+
+            List<ClashItemConfig> ownedItems = new List<ClashItemConfig>();
+            foreach (var kvp in owned)
             {
-                runtimeCards[index++] = CreateRuntimeCard($"Normal {i:00}", ClashCardRarity.N, 1f);
+                string cardName = kvp.Key;
+                int count = kvp.Value;
+                if (count <= 0) continue;
+
+                ClashItemConfig config = ClashItemConfig.FindByItemId(cardName);
+                if (config != null)
+                {
+                    ownedItems.Add(config);
+                    continue;
+                }
+
+                ClashItemConfig runtimeItem = BuildRuntimeItemFromCard(cardName, cardDatabase);
+                if (runtimeItem != null)
+                {
+                    ownedItems.Add(runtimeItem);
+                }
             }
 
-            for (int i = 1; i <= 5; i++)
+            if (ownedItems.Count > 0)
             {
-                runtimeCards[index++] = CreateRuntimeCard($"Rare {i:00}", ClashCardRarity.R, 1.5f);
+                availableItems = ownedItems.ToArray();
             }
-
-            for (int i = 1; i <= 5; i++)
+            else
             {
-                runtimeCards[index++] = CreateRuntimeCard($"Super Rare {i:00}", ClashCardRarity.SR, 2f);
+                availableItems = CreateFallbackItems();
             }
-
-            availableCards = runtimeCards;
         }
 
-        private static ClashCardConfig CreateRuntimeCard(string displayName, ClashCardRarity rarity, float multiplier)
+        private static CardDatabase FindCardDatabase()
         {
-            ClashCardConfig card = ScriptableObject.CreateInstance<ClashCardConfig>();
-            card.name = displayName;
-            card.ConfigureRuntime(displayName, rarity, multiplier);
-            return card;
+            if (CardDatabase.Instance != null) return CardDatabase.Instance;
+
+#if UNITY_EDITOR
+            string[] guids = UnityEditor.AssetDatabase.FindAssets("t:CardDatabase");
+            if (guids.Length > 0)
+            {
+                string path = UnityEditor.AssetDatabase.GUIDToAssetPath(guids[0]);
+                return UnityEditor.AssetDatabase.LoadAssetAtPath<CardDatabase>(path);
+            }
+#endif
+
+            return Resources.Load<CardDatabase>("CardDatabase");
         }
 
-        private static float GetMultiplier(ClashCardConfig card)
+        private static ClashItemConfig BuildRuntimeItemFromCard(string cardName, CardDatabase cardDatabase)
         {
-            return card != null ? card.PowerMultiplier : 1f;
+            if (cardDatabase == null) return null;
+
+            Card card = cardDatabase.FindCardByName(cardName);
+            if (card == null) return null;
+
+            float multiplier = card.rarity switch
+            {
+                CardRarity.Normal => 1f,
+                CardRarity.Rare => 1.5f,
+                CardRarity.SuperRare => 2f,
+                _ => 1f
+            };
+
+            ClashItemConfig item = ScriptableObject.CreateInstance<ClashItemConfig>();
+            item.ConfigureRuntime(card, multiplier);
+            return item;
+        }
+
+        private static void LoadAllItemConfigs()
+        {
+            ClashItemConfig[] existing = Resources.LoadAll<ClashItemConfig>("ClashItems");
+            if (existing.Length > 0) return;
+
+#if UNITY_EDITOR
+            string[] guids = UnityEditor.AssetDatabase.FindAssets("t:ClashItemConfig");
+            foreach (string guid in guids)
+            {
+                string path = UnityEditor.AssetDatabase.GUIDToAssetPath(guid);
+                if (path.Contains("Item_N_") || path.Contains("Item_R_") || path.Contains("Item_SR_"))
+                {
+                    UnityEditor.AssetDatabase.LoadAssetAtPath<ClashItemConfig>(path);
+                }
+            }
+#endif
+        }
+
+        private static ClashItemConfig[] CreateFallbackItems()
+        {
+            ClashItemConfig[] items = new ClashItemConfig[3];
+            items[0] = CreateRuntimeItem("NormalCard", "NormalCard", ClashItemRarity.N, 1f);
+            items[1] = CreateRuntimeItem("RareCard", "RareCard", ClashItemRarity.R, 1.5f);
+            items[2] = CreateRuntimeItem("SuperRareCard", "SuperRareCard", ClashItemRarity.SR, 2f);
+            return items;
+        }
+
+        private static ClashItemConfig CreateRuntimeItem(string itemId, string displayName, ClashItemRarity rarity, float multiplier)
+        {
+            ClashItemConfig item = ScriptableObject.CreateInstance<ClashItemConfig>();
+            item.ConfigureRuntime(itemId, displayName, rarity, multiplier);
+            return item;
+        }
+
+        private static float GetMultiplier(ClashItemConfig item)
+        {
+            return item != null ? item.PowerMultiplier : 1f;
         }
     }
 }

@@ -47,7 +47,7 @@ public static class ClashDemoSceneBuilder
 
         ClashFighterConfig playerConfig = EnsureConfig(PlayerConfigPath);
         ClashFighterConfig aiConfig = EnsureConfig(AiConfigPath);
-        ClashCardConfig[] cards = CreatePlaceholderCards();
+        ClashItemConfig[] items = CreatePlaceholderItems();
         EnsureEventSystem();
         Sprite battleHands = AssetDatabase.LoadAssetAtPath<Sprite>(BattleHandsPath);
         Sprite buttonDefault = AssetDatabase.LoadAssetAtPath<Sprite>(ButtonDefaultPath);
@@ -67,8 +67,8 @@ public static class ClashDemoSceneBuilder
         ClashBarUI barUI = CreateBar(canvasObject.transform);
         ClashHUD hud = CreateHud(canvasObject.transform, buttonDefault, buttonSmash);
         MinigameScoreUI scoreUI = CreateScore(canvasObject.transform);
-        CardSelectionUI cardSelectionUI = CreateCardSelection(canvasObject.transform);
-        CardRevealUI cardRevealUI = CreateReveal(canvasObject.transform);
+        ItemSelectionUI itemSelectionUI = CreateItemSelection(canvasObject.transform);
+        ItemRevealUI itemRevealUI = CreateReveal(canvasObject.transform);
         MinigameResultUI resultUI = CreateMinigameResult(canvasObject.transform);
 
         GameObject minigameObject = new("AduTosMinigame");
@@ -100,15 +100,15 @@ public static class ClashDemoSceneBuilder
 
         SerializedObject minigameSerialized = new(minigameController);
         minigameSerialized.FindProperty("clashController").objectReferenceValue = controller;
-        minigameSerialized.FindProperty("cardSelectionUI").objectReferenceValue = cardSelectionUI;
-        minigameSerialized.FindProperty("cardRevealUI").objectReferenceValue = cardRevealUI;
+        minigameSerialized.FindProperty("itemSelectionUI").objectReferenceValue = itemSelectionUI;
+        minigameSerialized.FindProperty("itemRevealUI").objectReferenceValue = itemRevealUI;
         minigameSerialized.FindProperty("scoreUI").objectReferenceValue = scoreUI;
         minigameSerialized.FindProperty("resultUI").objectReferenceValue = resultUI;
-        SerializedProperty cardsProperty = minigameSerialized.FindProperty("availableCards");
-        cardsProperty.arraySize = cards.Length;
-        for (int i = 0; i < cards.Length; i++)
+        SerializedProperty itemsProperty = minigameSerialized.FindProperty("availableItems");
+        itemsProperty.arraySize = items.Length;
+        for (int i = 0; i < items.Length; i++)
         {
-            cardsProperty.GetArrayElementAtIndex(i).objectReferenceValue = cards[i];
+            itemsProperty.GetArrayElementAtIndex(i).objectReferenceValue = items[i];
         }
         minigameSerialized.FindProperty("basePlayerPower").floatValue = 10f;
         minigameSerialized.FindProperty("baseAiPower").floatValue = 10f;
@@ -315,34 +315,34 @@ public static class ClashDemoSceneBuilder
         return scoreUI;
     }
 
-    private static CardSelectionUI CreateCardSelection(Transform parent)
+    private static ItemSelectionUI CreateItemSelection(Transform parent)
     {
-        GameObject panel = CreateFullScreenPanel("CardSelectionOverlay", parent, new Color(0f, 0f, 0f, 0.72f));
-        CardSelectionUI selectionUI = panel.AddComponent<CardSelectionUI>();
+        GameObject panel = CreateFullScreenPanel("ItemSelectionOverlay", parent, new Color(0f, 0f, 0f, 0.72f));
+        ItemSelectionUI selectionUI = panel.AddComponent<ItemSelectionUI>();
 
-        Text title = CreateText("CardSelectionTitle", panel.transform, "Choose 1 Card", 64, new Vector2(0.5f, 0.5f), new Vector2(0f, 210f));
+        Text title = CreateText("ItemSelectionTitle", panel.transform, "Choose 1 Item", 64, new Vector2(0.5f, 0.5f), new Vector2(0f, 210f));
         title.fontStyle = FontStyle.Bold;
 
         GameObject carouselRoot = CreateUiObject("CarouselRoot", panel.transform, new Vector2(900f, 300f), new Vector2(0.5f, 0.5f), new Vector2(0f, -20f));
         Image dragCatcher = carouselRoot.AddComponent<Image>();
         dragCatcher.color = new Color(1f, 1f, 1f, 0.001f);
 
-        GameObject itemTemplateObject = CreateUiObject("CardTemplate", carouselRoot.transform, new Vector2(200f, 260f), new Vector2(0.5f, 0.5f), Vector2.zero);
+        GameObject itemTemplateObject = CreateUiObject("ItemTemplate", carouselRoot.transform, new Vector2(200f, 260f), new Vector2(0.5f, 0.5f), Vector2.zero);
         CanvasGroup itemGroup = itemTemplateObject.AddComponent<CanvasGroup>();
         itemGroup.alpha = 1f;
         itemGroup.interactable = true;
         itemGroup.blocksRaycasts = true;
         Image itemImage = itemTemplateObject.AddComponent<Image>();
         itemImage.color = new Color(0.7f, 0.7f, 0.7f, 1f);
-        CardCarouselItem itemTemplate = itemTemplateObject.AddComponent<CardCarouselItem>();
+        ItemCarouselItem itemTemplate = itemTemplateObject.AddComponent<ItemCarouselItem>();
 
-        GameObject itemClickArea = CreateStretchObject("CardClickArea", itemTemplateObject.transform);
+        GameObject itemClickArea = CreateStretchObject("ItemClickArea", itemTemplateObject.transform);
         Image itemClickImage = itemClickArea.AddComponent<Image>();
         itemClickImage.color = new Color(1f, 1f, 1f, 0.001f);
         Button itemButton = itemClickArea.AddComponent<Button>();
         itemButton.onClick.AddListener(selectionUI.ConfirmSelection);
 
-        Text itemLabel = CreateText("CardLabel", itemTemplateObject.transform, "N\nCard\nx1", 34, new Vector2(0.5f, 0.5f), Vector2.zero);
+        Text itemLabel = CreateText("ItemLabel", itemTemplateObject.transform, "N\nItem\nx1", 34, new Vector2(0.5f, 0.5f), Vector2.zero);
         itemLabel.color = Color.black;
         itemLabel.fontStyle = FontStyle.Bold;
         itemLabel.GetComponent<RectTransform>().sizeDelta = new Vector2(180f, 220f);
@@ -379,20 +379,20 @@ public static class ClashDemoSceneBuilder
         return selectionUI;
     }
 
-    private static CardRevealUI CreateReveal(Transform parent)
+    private static ItemRevealUI CreateReveal(Transform parent)
     {
-        GameObject panel = CreateFullScreenPanel("CardRevealOverlay", parent, new Color(0f, 0f, 0f, 0.68f));
-        CardRevealUI revealUI = panel.AddComponent<CardRevealUI>();
+        GameObject panel = CreateFullScreenPanel("ItemRevealOverlay", parent, new Color(0f, 0f, 0f, 0.68f));
+        ItemRevealUI revealUI = panel.AddComponent<ItemRevealUI>();
 
         Text title = CreateText("RevealTitle", panel.transform, "REVEAL", 60, new Vector2(0.5f, 0.5f), new Vector2(0f, 215f));
         title.fontStyle = FontStyle.Bold;
-        Text playerText = CreateText("PlayerRevealCard", panel.transform, "YOU", 44, new Vector2(0.5f, 0.5f), new Vector2(-260f, 20f));
-        Text aiText = CreateText("AiRevealCard", panel.transform, "AI", 44, new Vector2(0.5f, 0.5f), new Vector2(260f, 20f));
+        Text playerText = CreateText("PlayerRevealItem", panel.transform, "YOU", 44, new Vector2(0.5f, 0.5f), new Vector2(-260f, 20f));
+        Text aiText = CreateText("AiRevealItem", panel.transform, "AI", 44, new Vector2(0.5f, 0.5f), new Vector2(260f, 20f));
 
         SerializedObject revealSerialized = new(revealUI);
         revealSerialized.FindProperty("canvasGroup").objectReferenceValue = panel.GetComponent<CanvasGroup>();
-        revealSerialized.FindProperty("playerCardText").objectReferenceValue = playerText;
-        revealSerialized.FindProperty("aiCardText").objectReferenceValue = aiText;
+        revealSerialized.FindProperty("playerItemText").objectReferenceValue = playerText;
+        revealSerialized.FindProperty("aiItemText").objectReferenceValue = aiText;
         revealSerialized.FindProperty("revealDuration").floatValue = 1.2f;
         revealSerialized.ApplyModifiedPropertiesWithoutUndo();
 
@@ -514,45 +514,45 @@ public static class ClashDemoSceneBuilder
         return config;
     }
 
-    private static ClashCardConfig[] CreatePlaceholderCards()
+    private static ClashItemConfig[] CreatePlaceholderItems()
     {
-        ClashCardConfig[] cards = new ClashCardConfig[15];
+        ClashItemConfig[] items = new ClashItemConfig[15];
         int index = 0;
 
         for (int i = 1; i <= 5; i++)
         {
-            cards[index++] = EnsureCard($"{ConfigDirectory}/Card_N_{i:00}.asset", $"Normal {i:00}", ClashCardRarity.N, 1f);
+            items[index++] = EnsureItem($"{ConfigDirectory}/Item_N_{i:00}.asset", $"Normal {i:00}", ClashItemRarity.N, 1f);
         }
 
         for (int i = 1; i <= 5; i++)
         {
-            cards[index++] = EnsureCard($"{ConfigDirectory}/Card_R_{i:00}.asset", $"Rare {i:00}", ClashCardRarity.R, 1.5f);
+            items[index++] = EnsureItem($"{ConfigDirectory}/Item_R_{i:00}.asset", $"Rare {i:00}", ClashItemRarity.R, 1.5f);
         }
 
         for (int i = 1; i <= 5; i++)
         {
-            cards[index++] = EnsureCard($"{ConfigDirectory}/Card_SR_{i:00}.asset", $"Super Rare {i:00}", ClashCardRarity.SR, 2f);
+            items[index++] = EnsureItem($"{ConfigDirectory}/Item_SR_{i:00}.asset", $"Super Rare {i:00}", ClashItemRarity.SR, 2f);
         }
 
-        return cards;
+        return items;
     }
 
-    private static ClashCardConfig EnsureCard(string path, string displayName, ClashCardRarity rarity, float multiplier)
+    private static ClashItemConfig EnsureItem(string path, string displayName, ClashItemRarity rarity, float multiplier)
     {
-        ClashCardConfig card = AssetDatabase.LoadAssetAtPath<ClashCardConfig>(path);
-        if (card == null)
+        ClashItemConfig item = AssetDatabase.LoadAssetAtPath<ClashItemConfig>(path);
+        if (item == null)
         {
-            card = ScriptableObject.CreateInstance<ClashCardConfig>();
-            AssetDatabase.CreateAsset(card, path);
+            item = ScriptableObject.CreateInstance<ClashItemConfig>();
+            AssetDatabase.CreateAsset(item, path);
         }
 
-        SerializedObject cardSerialized = new(card);
-        cardSerialized.FindProperty("displayName").stringValue = displayName;
-        cardSerialized.FindProperty("rarity").enumValueIndex = (int)rarity;
-        cardSerialized.FindProperty("powerMultiplier").floatValue = multiplier;
-        cardSerialized.ApplyModifiedPropertiesWithoutUndo();
-        EditorUtility.SetDirty(card);
-        return card;
+        SerializedObject itemSerialized = new(item);
+        itemSerialized.FindProperty("displayName").stringValue = displayName;
+        itemSerialized.FindProperty("rarity").enumValueIndex = (int)rarity;
+        itemSerialized.FindProperty("powerMultiplier").floatValue = multiplier;
+        itemSerialized.ApplyModifiedPropertiesWithoutUndo();
+        EditorUtility.SetDirty(item);
+        return item;
     }
 
     private static void ClearExistingDemoObjects()

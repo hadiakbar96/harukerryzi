@@ -45,23 +45,29 @@ public static class ClashBakeLayoutTool
         Text aiScoreText = EnsureScoreText(rightPanel, "AiScoreText");
 
         EnsurePressureBar(canvasObject.transform);
+        EnsureItemSelectionUI(canvasObject.transform);
+        EnsureItemRevealUI(canvasObject.transform);
         WireStageLayout(canvasObject, playArea, leftPanel, rightPanel);
         WireScoreTexts(playerScoreText, aiScoreText);
         EnsureEntranceUI(canvasObject, playArea);
-        EnsureClashBackgroundUI(canvasObject, playArea);
+        EnsureClashBackgroundUI(canvasObject, canvas);
         EnsureResultUI(canvasObject.transform);
         EnsureWinFx(canvasObject.transform);
         EnsureRewardUI(canvasObject.transform);
         EnsureSpaceLabel(canvasObject.transform);
         HideLegacyCardReveal(canvasObject.transform);
         HideLegacyBattleHands(canvasObject.transform);
+        HideRoundText(canvasObject.transform);
+        HideCanvasGuide(canvasObject.transform);
         WireMinigameController();
         RemoveMissingScripts();
 
         // Keep backgrounds behind gameplay UI.
-        playArea.SetAsFirstSibling();
-        leftPanel.SetSiblingIndex(1);
-        rightPanel.SetSiblingIndex(2);
+        Transform bg = canvas.Find("EnemyClashBackground");
+        if (bg != null) bg.SetAsFirstSibling();
+        playArea.SetSiblingIndex(1);
+        leftPanel.SetSiblingIndex(2);
+        rightPanel.SetSiblingIndex(3);
 
         EditorSceneManager.MarkSceneDirty(UnityEngine.SceneManagement.SceneManager.GetActiveScene());
         Debug.Log("Baked battle (1:1) layout into ClashCanvas. ClashCanvas was not deleted or rebuilt.");
@@ -140,9 +146,14 @@ public static class ClashBakeLayoutTool
 
     private static void EnsureEntranceUI(GameObject canvasObject, RectTransform playArea)
     {
-        Transform existing = playArea != null ? playArea.Find("AduTosEntranceUI") : null;
+        Transform canvas = canvasObject.transform;
+        Transform existing = FindDeepChild(canvas, "AduTosEntranceUI");
+        if (existing != null && existing.parent != canvas)
+        {
+            existing.SetParent(canvas, false);
+        }
         GameObject entranceObject = existing != null ? existing.gameObject : new GameObject("AduTosEntranceUI");
-        entranceObject.transform.SetParent(playArea != null ? playArea : canvasObject.transform, false);
+        entranceObject.transform.SetParent(canvas, false);
 
         RectTransform rect = entranceObject.GetComponent<RectTransform>();
         if (rect == null)
@@ -167,11 +178,15 @@ public static class ClashBakeLayoutTool
         entranceObject.transform.SetAsLastSibling();
     }
 
-    private static void EnsureClashBackgroundUI(GameObject canvasObject, RectTransform playArea)
+    private static void EnsureClashBackgroundUI(GameObject canvasObject, Transform canvas)
     {
-        Transform existing = playArea != null ? playArea.Find("EnemyClashBackground") : null;
+        Transform existing = canvas != null ? canvas.Find("EnemyClashBackground") : null;
+        if (existing != null && existing.parent != canvas)
+        {
+            existing.SetParent(canvas, false);
+        }
         GameObject backgroundObject = existing != null ? existing.gameObject : new GameObject("EnemyClashBackground");
-        backgroundObject.transform.SetParent(playArea != null ? playArea : canvasObject.transform, false);
+        backgroundObject.transform.SetParent(canvas, false);
 
         RectTransform rect = backgroundObject.GetComponent<RectTransform>();
         if (rect == null)
@@ -179,10 +194,11 @@ public static class ClashBakeLayoutTool
             rect = backgroundObject.AddComponent<RectTransform>();
         }
 
-        rect.anchorMin = new Vector2(0.5f, 0.5f);
-        rect.anchorMax = new Vector2(0.5f, 0.5f);
+        rect.anchorMin = Vector2.zero;
+        rect.anchorMax = Vector2.one;
         rect.pivot = new Vector2(0.5f, 0.5f);
-        rect.anchoredPosition = Vector2.zero;
+        rect.offsetMin = Vector2.zero;
+        rect.offsetMax = Vector2.zero;
 
         ClashBackgroundUI background = backgroundObject.GetComponent<ClashBackgroundUI>();
         if (background == null)
@@ -258,6 +274,9 @@ public static class ClashBakeLayoutTool
         AssignIfPresent(serialized, "winFxUI", Object.FindFirstObjectByType<ClashWinFxUI>());
         AssignIfPresent(serialized, "resultUI", Object.FindFirstObjectByType<MinigameResultUI>());
         AssignIfPresent(serialized, "rewardUI", Object.FindFirstObjectByType<RewardUI>());
+        AssignIfPresent(serialized, "itemSelectionUI", Object.FindFirstObjectByType<ItemSelectionUI>());
+        AssignIfPresent(serialized, "itemRevealUI", Object.FindFirstObjectByType<ItemRevealUI>());
+        AssignIfPresent(serialized, "mashButtonUI", Object.FindFirstObjectByType<ClashMashButtonUI>());
         AssignIfPresent(serialized, "mcHandSprite", LoadSprite("Assets/Projects/Sprites/Battle/Sprite_Battle_MC.png"));
         serialized.ApplyModifiedPropertiesWithoutUndo();
     }
@@ -343,6 +362,74 @@ public static class ClashBakeLayoutTool
         }
 
         serialized.ApplyModifiedPropertiesWithoutUndo();
+    }
+
+    private static void EnsureItemSelectionUI(Transform canvas)
+    {
+        Transform existing = FindDeepChild(canvas, "ItemSelectionUI");
+        GameObject obj = existing != null ? existing.gameObject : new GameObject("ItemSelectionUI");
+        obj.transform.SetParent(canvas, false);
+
+        RectTransform rect = obj.GetComponent<RectTransform>();
+        if (rect == null)
+        {
+            rect = obj.AddComponent<RectTransform>();
+        }
+
+        rect.anchorMin = new Vector2(0.5f, 0.5f);
+        rect.anchorMax = new Vector2(0.5f, 0.5f);
+        rect.pivot = new Vector2(0.5f, 0.5f);
+        rect.anchoredPosition = Vector2.zero;
+        rect.sizeDelta = new Vector2(1920f, 1080f);
+
+        if (obj.GetComponent<CanvasGroup>() == null)
+        {
+            obj.AddComponent<CanvasGroup>();
+        }
+
+        ItemSelectionUI ui = obj.GetComponent<ItemSelectionUI>();
+        if (ui == null)
+        {
+            ui = obj.AddComponent<ItemSelectionUI>();
+        }
+
+        Image bg = obj.GetComponent<Image>();
+        if (bg == null)
+        {
+            bg = obj.AddComponent<Image>();
+        }
+        bg.color = new Color(0f, 0f, 0f, 0.7f);
+        bg.raycastTarget = true;
+    }
+
+    private static void EnsureItemRevealUI(Transform canvas)
+    {
+        Transform existing = FindDeepChild(canvas, "ItemRevealUI");
+        GameObject obj = existing != null ? existing.gameObject : new GameObject("ItemRevealUI");
+        obj.transform.SetParent(canvas, false);
+
+        RectTransform rect = obj.GetComponent<RectTransform>();
+        if (rect == null)
+        {
+            rect = obj.AddComponent<RectTransform>();
+        }
+
+        rect.anchorMin = new Vector2(0.5f, 0.5f);
+        rect.anchorMax = new Vector2(0.5f, 0.5f);
+        rect.pivot = new Vector2(0.5f, 0.5f);
+        rect.anchoredPosition = Vector2.zero;
+        rect.sizeDelta = new Vector2(1920f, 1080f);
+
+        if (obj.GetComponent<CanvasGroup>() == null)
+        {
+            obj.AddComponent<CanvasGroup>();
+        }
+
+        ItemRevealUI ui = obj.GetComponent<ItemRevealUI>();
+        if (ui == null)
+        {
+            ui = obj.AddComponent<ItemRevealUI>();
+        }
     }
 
     private static void EnsureWinFx(Transform canvas)
@@ -498,6 +585,24 @@ public static class ClashBakeLayoutTool
         if (cardReveal != null)
         {
             cardReveal.gameObject.SetActive(false);
+        }
+    }
+
+    private static void HideRoundText(Transform canvas)
+    {
+        Transform roundText = FindDeepChild(canvas, "MinigameScore");
+        if (roundText != null)
+        {
+            roundText.gameObject.SetActive(false);
+        }
+    }
+
+    private static void HideCanvasGuide(Transform canvas)
+    {
+        Transform guide = FindDeepChild(canvas, "CanvasGuide_1920x1080_ToggleOffBeforePlay");
+        if (guide != null)
+        {
+            guide.gameObject.SetActive(false);
         }
     }
 

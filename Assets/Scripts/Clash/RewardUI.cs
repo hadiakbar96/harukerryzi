@@ -247,6 +247,12 @@ namespace Harukerryzi.Clash
 
             return AssetDatabase.LoadAssetAtPath<Sprite>(path);
 #else
+            if (path.Contains("UI_PopUpReward"))
+                return Resources.Load<Sprite>("PostBattle/UI_PopUpReward");
+            if (path.Contains("UI_Coins"))
+                return Resources.Load<Sprite>("PostBattle/UI_Coins");
+            if (path.Contains("UI_ClaimButton"))
+                return Resources.Load<Sprite>("PostBattle/UI_ClaimButton");
             return null;
 #endif
         }

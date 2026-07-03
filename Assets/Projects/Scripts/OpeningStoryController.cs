@@ -454,6 +454,13 @@ public class OpeningStoryController : MonoBehaviour
             return tikusEnemyConfig;
         }
 
+        AduTosEnemyConfig loaded = Resources.Load<AduTosEnemyConfig>("Enemies/Enemy_1_Tikus");
+        if (loaded != null)
+        {
+            tikusEnemyConfig = loaded;
+            return tikusEnemyConfig;
+        }
+
 #if UNITY_EDITOR
         tikusEnemyConfig = AssetDatabase.LoadAssetAtPath<AduTosEnemyConfig>("Assets/Projects/Settings/Clash/Enemy_1_Tikus.asset");
         return tikusEnemyConfig;

@@ -193,6 +193,10 @@ namespace Harukerryzi.Clash
 
             return AssetDatabase.LoadAssetAtPath<Sprite>(path);
 #else
+            if (path.Contains("UI_WinDialog"))
+                return Resources.Load<Sprite>("WinLose/UI_WinDialog");
+            if (path.Contains("UI_LoseDialog"))
+                return Resources.Load<Sprite>("WinLose/UI_LoseDialog");
             return null;
 #endif
         }

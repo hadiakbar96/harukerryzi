@@ -30,14 +30,7 @@ namespace Harukerryzi.Clash
         private Coroutine transition;
         private bool animateBattleHands;
 
-        public RectTransform PlayArea
-        {
-            get
-            {
-                AutoWireMissingReferences();
-                return playArea;
-            }
-        }
+        public RectTransform PlayArea => playArea;
 
         private void Awake()
         {
@@ -52,12 +45,22 @@ namespace Harukerryzi.Clash
 
         public void TransitionToClashSquare()
         {
-            StartTransition(false);
+            if (IsClashSquare) return;
+            
+            Debug.Log($"[StageLayout] TransitionToClashSquare called at {Time.time:F2}s");
+            StopTransition();
+            _transitioningToClash = true;
+            transition = StartCoroutine(TransitionRoutine(false));
         }
 
         public void TransitionToFullBackground()
         {
-            StartTransition(true);
+            if (!IsClashSquare && !_transitioningToClash) return;
+            
+            Debug.Log($"[StageLayout] TransitionToFullBackground called at {Time.time:F2}s");
+            StopTransition();
+            _transitioningToClash = false;
+            transition = StartCoroutine(TransitionRoutine(true));
         }
 
         public void SetBattleHandsAnimationEnabled(bool enabled)
@@ -118,6 +121,7 @@ namespace Harukerryzi.Clash
             SetSidePanel(leftScorePanel, Vector2.Lerp(Vector2.zero, sidePanelSize, t), Vector2.Lerp(new Vector2(-fullPlayAreaSize.x * 0.5f, 0f), new Vector2(-sidePanelOffsetX, 0f), t), t);
             SetSidePanel(rightScorePanel, Vector2.Lerp(Vector2.zero, sidePanelSize, t), Vector2.Lerp(new Vector2(fullPlayAreaSize.x * 0.5f, 0f), new Vector2(sidePanelOffsetX, 0f), t), t);
             SetClashElementsVisible(t);
+            Debug.Log($"[StageLayout] ApplyClashSquare t={t:F2}, playArea={playArea != null}, clashBar={clashBar != null}");
         }
 
         private void SetPlayArea(Vector2 size, Vector2 position)

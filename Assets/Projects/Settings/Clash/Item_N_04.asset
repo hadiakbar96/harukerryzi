@@ -1,0 +1,19 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 4cb44f709756426b8c3e736565844fcd, type: 3}
+  m_Name: Item_N_04
+  m_EditorClassIdentifier: 
+  itemId: AlienID
+  displayName: SIM Alien
+  rarity: 0
+  powerMultiplier: 1
+  artwork: {fileID: 3253199326428422363, guid: 2d340ca48c2c347dab9c0a5fd535b552, type: 3}

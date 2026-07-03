@@ -9,8 +9,13 @@ using UnityEditor.SceneManagement;
 public sealed class TitleScreenController : MonoBehaviour
 {
     [SerializeField] private RectTransform playButtonRect;
+    [SerializeField] private RectTransform collectionButtonRect;
     [SerializeField] private string openingStorySceneName = "OpeningStory";
     [SerializeField] private string stageMapSceneName = "StageMap";
+    [SerializeField] private string collectionSceneName = "Collection";
+
+    private const string SEED_KEY = "Harukerryzi.Seeded";
+    private const string STARTER_CARD = "NormalCard";
 
     [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.AfterSceneLoad)]
     private static void AutoWireTitleScene()
@@ -28,11 +33,14 @@ public sealed class TitleScreenController : MonoBehaviour
         }
 
         controller.WirePlayButton();
+        controller.WireCollectionButton();
     }
 
     private void Awake()
     {
+        SeedFirstTime();
         WirePlayButton();
+        WireCollectionButton();
     }
 
     private void Update()
@@ -42,10 +50,28 @@ public sealed class TitleScreenController : MonoBehaviour
             ResetProgress();
         }
 
-        if (Input.GetMouseButtonDown(0) && IsPointerOverPlayButton())
+        if (Input.GetMouseButtonDown(0))
         {
-            OnPlayClicked();
+            if (IsPointerOverPlayButton())
+            {
+                OnPlayClicked();
+            }
+            else if (IsPointerOverCollectionButton())
+            {
+                OnCollectionClicked();
+            }
         }
+    }
+
+    private void SeedFirstTime()
+    {
+        if (PlayerPrefs.HasKey(SEED_KEY)) return;
+
+        CardInventory.AddCard(STARTER_CARD);
+        CurrencyWallet.AddCoins(0);
+        PlayerPrefs.SetInt(SEED_KEY, 1);
+        PlayerPrefs.Save();
+        Debug.Log("[TitleScreen] First-time seed: 1× " + STARTER_CARD);
     }
 
     private void WirePlayButton()
@@ -76,42 +102,63 @@ public sealed class TitleScreenController : MonoBehaviour
         collider.offset = Vector2.zero;
     }
 
-    private bool IsPointerOverPlayButton()
+    private void WireCollectionButton()
     {
-        if (playButtonRect == null)
+        if (collectionButtonRect == null)
         {
-            return false;
+            GameObject found = GameObject.Find("Button_Collection");
+            if (found != null)
+            {
+                collectionButtonRect = found.GetComponent<RectTransform>();
+            }
         }
+
+        if (collectionButtonRect == null) return;
+
+        BoxCollider2D collider = collectionButtonRect.GetComponent<BoxCollider2D>();
+        if (collider == null)
+        {
+            collider = collectionButtonRect.gameObject.AddComponent<BoxCollider2D>();
+        }
+
+        Vector2 size = collectionButtonRect.sizeDelta;
+        collider.size = size;
+        collider.offset = Vector2.zero;
+    }
+
+    private bool IsPointerOverButton(RectTransform buttonRect)
+    {
+        if (buttonRect == null) return false;
 
         Vector2 localPoint;
-        RectTransform canvasRect = playButtonRect.GetComponentInParent<Canvas>()?.GetComponent<RectTransform>();
-        if (canvasRect == null)
-        {
+        if (!RectTransformUtility.ScreenPointToLocalPointInRectangle(buttonRect, Input.mousePosition, null, out localPoint))
             return false;
-        }
 
-        if (!RectTransformUtility.ScreenPointToLocalPointInRectangle(canvasRect, Input.mousePosition, null, out localPoint))
-        {
-            return false;
-        }
-
-        return playButtonRect.rect.Contains(localPoint);
+        return buttonRect.rect.Contains(localPoint);
     }
+
+    private bool IsPointerOverPlayButton() => IsPointerOverButton(playButtonRect);
+    private bool IsPointerOverCollectionButton() => IsPointerOverButton(collectionButtonRect);
 
     private void OnPlayClicked()
     {
-        string targetScene = PlayerPrefs.GetInt(OpeningStoryController.IntroSeenKey, 0) == 1
-            ? stageMapSceneName
-            : openingStorySceneName;
+        PlayerPrefs.SetInt(OpeningStoryController.IntroSeenKey, 1);
+        LoadScene(stageMapSceneName);
+    }
 
-        LoadScene(targetScene);
+    private void OnCollectionClicked()
+    {
+        LoadScene(collectionSceneName);
     }
 
     private void ResetProgress()
     {
         PlayerPrefs.DeleteKey(OpeningStoryController.IntroSeenKey);
+        PlayerPrefs.DeleteKey(SEED_KEY);
         StageProgress.Reset();
-        Debug.Log("[TitleScreen] Story progress reset. Intro will replay on next Play.");
+        CardInventory.ClearAll();
+        CurrencyWallet.Reset();
+        Debug.Log("[TitleScreen] All progress reset.");
     }
 
     private static void LoadScene(string sceneName)

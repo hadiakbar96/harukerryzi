@@ -55,6 +55,7 @@ public sealed class StageMapController : MonoBehaviour
     private int _selectedPos;
     private int _frontierPos;
     private bool _isTransitioning;
+    private int _ignoreInputFrames;
 
     private enum NodeKind
     {
@@ -75,16 +76,24 @@ public sealed class StageMapController : MonoBehaviour
 #if UNITY_EDITOR
         EnsureEditorSpriteFallbacks();
 #endif
+        EnsureBackgroundSpriteFallbacks();
         DiscoverNodes();
         int requestedSelection = ApplyReturnedBattleResult();
         _frontierPos = GetFrontierPosition();
         _selectedPos = requestedSelection >= 0 ? Mathf.Min(requestedSelection, _frontierPos) : GetDefaultSelectedPosition();
         ApplyStateImmediate();
         CenterOnSelectedImmediate();
+        _ignoreInputFrames = 5;
     }
 
     private void Update()
     {
+        if (_ignoreInputFrames > 0)
+        {
+            _ignoreInputFrames--;
+            return;
+        }
+
         if (_isTransitioning || Keyboard.current == null)
         {
             return;
@@ -186,7 +195,7 @@ public sealed class StageMapController : MonoBehaviour
 
     private void OnNodeClicked(int position)
     {
-        if (_isTransitioning || !IsPositionUnlocked(position))
+        if (_isTransitioning || _ignoreInputFrames > 0 || !IsPositionUnlocked(position))
         {
             return;
         }
@@ -195,7 +204,7 @@ public sealed class StageMapController : MonoBehaviour
         {
             _selectedPos = position;
             ApplyStateImmediate();
-            StartCoroutine(TransitionToSelected(() => ConfirmSelected()));
+            StartCoroutine(TransitionToSelected(null));
             return;
         }
 
@@ -450,6 +459,40 @@ public sealed class StageMapController : MonoBehaviour
         }
     }
 
+
+    private void EnsureBackgroundSpriteFallbacks()
+    {
+        if (tikusBackgroundSprite == null)
+            tikusBackgroundSprite = Resources.Load<Sprite>("BattleSprites/battle_tikus");
+        if (kuntiBackgroundSprite == null)
+            kuntiBackgroundSprite = Resources.Load<Sprite>("BattleSprites/battle_kunti");
+        if (tiangBackgroundSprite == null)
+            tiangBackgroundSprite = Resources.Load<Sprite>("BattleSprites/battle_tiang");
+
+#if UNITY_EDITOR
+        if (tikusBackgroundSprite == null)
+        {
+            string path = "Assets/Projects/Sprites/StageMap/battle_tikus.png";
+            Sprite loaded = UnityEditor.AssetDatabase.LoadAssetAtPath<Sprite>(path);
+            if (loaded != null) tikusBackgroundSprite = loaded;
+        }
+        if (kuntiBackgroundSprite == null)
+        {
+            string path = "Assets/Projects/Sprites/StageMap/battle_kunti.png";
+            Sprite loaded = UnityEditor.AssetDatabase.LoadAssetAtPath<Sprite>(path);
+            if (loaded != null) kuntiBackgroundSprite = loaded;
+        }
+        if (tiangBackgroundSprite == null)
+        {
+            string path = "Assets/Projects/Sprites/StageMap/battle_tiang.png";
+            Sprite loaded = UnityEditor.AssetDatabase.LoadAssetAtPath<Sprite>(path);
+            if (loaded != null) tiangBackgroundSprite = loaded;
+        }
+#endif
+
+        defaultBackgroundSprite ??= tikusBackgroundSprite;
+    }
+
 #if UNITY_EDITOR
     private void EnsureEditorSpriteFallbacks()
     {
@@ -636,6 +679,13 @@ public sealed class StageMapController : MonoBehaviour
         if (stageEnemies != null && index < stageEnemies.Length && stageEnemies[index] != null)
         {
             return stageEnemies[index];
+        }
+
+        string[] names = { "Enemy_1_Tikus", "Enemy_2_Kunti", "Enemy_3_Tiang" };
+        if (index < names.Length)
+        {
+            AduTosEnemyConfig loaded = Resources.Load<AduTosEnemyConfig>("Enemies/" + names[index]);
+            if (loaded != null) return loaded;
         }
 
 #if UNITY_EDITOR

@@ -10,7 +10,7 @@ namespace Harukerryzi.Clash
         [SerializeField, Min(0f)] private float baseMashPower = 10f;
         [SerializeField, Min(0f)] private float mashesPerSecond = 4f;
         [SerializeField, Range(0f, 1f)] private float mashRandomness = 0.2f;
-        [SerializeField] private ClashCardConfig[] cardPool;
+        [SerializeField] private ClashItemConfig[] itemPool;
         [SerializeField] private Sprite enemyHandSprite;
         [SerializeField, Min(0.1f)] private float entranceHandScale = 1f;
         [SerializeField] private Vector2 entranceHandStartPosition = new(980f, -520f);
@@ -26,7 +26,7 @@ namespace Harukerryzi.Clash
         public float BaseMashPower => baseMashPower;
         public float MashesPerSecond => mashesPerSecond;
         public float MashRandomness => mashRandomness;
-        public ClashCardConfig[] CardPool => cardPool;
+        public ClashItemConfig[] ItemPool => itemPool;
         public Sprite EnemyHandSprite => enemyHandSprite;
         public float EntranceHandScale => entranceHandScale;
         public Vector2 EntranceHandStartPosition => entranceHandStartPosition;

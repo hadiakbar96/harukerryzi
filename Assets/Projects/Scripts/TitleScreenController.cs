@@ -148,8 +148,15 @@ public sealed class TitleScreenController : MonoBehaviour
     private void OnPlayClicked()
     {
         GameAudio.PlaySfx(clickSfx);
-        PlayerPrefs.SetInt(OpeningStoryController.IntroSeenKey, 1);
-        LoadScene(stageMapSceneName);
+        bool hasProgress = PlayerPrefs.HasKey(OpeningStoryController.IntroSeenKey);
+        if (hasProgress)
+        {
+            LoadScene(stageMapSceneName);
+        }
+        else
+        {
+            LoadScene(openingStorySceneName);
+        }
     }
 
     private void OnCollectionClicked()

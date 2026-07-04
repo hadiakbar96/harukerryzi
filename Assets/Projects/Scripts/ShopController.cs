@@ -38,24 +38,11 @@ public class ShopController : MonoBehaviour
     [Tooltip("Scene loaded by the back button when no return scene was recorded.")]
     [SerializeField] private string defaultBackScene = "StageMap";
 
-    [Header("Swipe To Open")]
-    [Tooltip("Horizontal drag distance (fraction of screen width) needed to swipe-open the pack.")]
-    [SerializeField] private float swipeThreshold = 0.1f;
-
     private Coroutine _feedbackCoroutine;
 
     // Pack panel extras (created at runtime the first time the panel opens)
     private bool _panelExtrasCreated;
-    private RectTransform _packRect;
-    private CanvasGroup _guideGroup;
-    private RectTransform _guideArrow;
-    private Vector2 _arrowBasePos;
     private Sprite _backSprite;
-    private Canvas _canvas;
-
-    // Swipe tracking
-    private Vector2 _swipeStart;
-    private bool _swipeStartedOnPack;
 
     private void Start()
     {
@@ -90,17 +77,7 @@ public class ShopController : MonoBehaviour
         UpdateCoinDisplay();
         HideFeedback();
 
-        _canvas = FindObjectOfType<Canvas>();
         WireBackButton();
-    }
-
-    private void Update()
-    {
-        if (packObtainedPanel == null || !packObtainedPanel.activeInHierarchy)
-            return;
-
-        HandlePackSwipe();
-        AnimateSwipeGuide();
     }
 
     /// <summary>
@@ -239,7 +216,7 @@ public class ShopController : MonoBehaviour
     }
 
     // ═══════════════════════════════════════════════════════════════
-    //  Pack Panel Extras (back button + swipe guide)
+    //  Pack Panel Extras (back button)
     // ═══════════════════════════════════════════════════════════════
 
     private void EnsurePanelExtras()
@@ -247,12 +224,7 @@ public class ShopController : MonoBehaviour
         if (_panelExtrasCreated) return;
         _panelExtrasCreated = true;
 
-        Transform packTransform = packObtainedPanel.transform.Find("Pack");
-        if (packTransform != null)
-            _packRect = packTransform as RectTransform;
-
         CreatePanelBackButton();
-        CreateSwipeGuide();
     }
 
     private void CreatePanelBackButton()
@@ -276,117 +248,6 @@ public class ShopController : MonoBehaviour
 
         Button button = buttonObj.AddComponent<Button>();
         button.onClick.AddListener(OnCancelPackClicked);
-    }
-
-    private void CreateSwipeGuide()
-    {
-        if (_packRect == null) return;
-
-        GameObject guideObj = new GameObject("SwipeGuide", typeof(RectTransform));
-        guideObj.transform.SetParent(_packRect, false);
-
-        RectTransform guideRect = guideObj.GetComponent<RectTransform>();
-        guideRect.anchorMin = Vector2.zero;
-        guideRect.anchorMax = Vector2.one;
-        guideRect.offsetMin = Vector2.zero;
-        guideRect.offsetMax = Vector2.zero;
-
-        _guideGroup = guideObj.AddComponent<CanvasGroup>();
-        _guideGroup.blocksRaycasts = false;
-        _guideGroup.interactable = false;
-
-        float packWidth = _packRect.rect.width;
-        float packHeight = _packRect.rect.height;
-        float lineY = packHeight / 2f - 45f; // tear line near the top of the pack
-
-        // Dashed line across the pack
-        int dashCount = 8;
-        float dashWidth = packWidth / (dashCount * 2f - 1f);
-        float startX = -packWidth / 2f;
-        for (int i = 0; i < dashCount; i++)
-        {
-            GameObject dashObj = new GameObject("Dash_" + i, typeof(RectTransform));
-            dashObj.transform.SetParent(guideRect, false);
-
-            RectTransform dashRect = dashObj.GetComponent<RectTransform>();
-            dashRect.anchoredPosition = new Vector2(startX + i * dashWidth * 2f + dashWidth / 2f, lineY);
-            dashRect.sizeDelta = new Vector2(dashWidth * 0.8f, 6f);
-
-            Image dashImage = dashObj.AddComponent<Image>();
-            dashImage.color = new Color(1f, 1f, 1f, 0.8f);
-        }
-
-        // "Swipe here" label to the left of the pack, aligned with the tear line
-        GameObject labelObj = new GameObject("SwipeLabel", typeof(RectTransform));
-        labelObj.transform.SetParent(guideRect, false);
-
-        RectTransform labelRect = labelObj.GetComponent<RectTransform>();
-        labelRect.anchoredPosition = new Vector2(-packWidth / 2f - 250f, lineY);
-        labelRect.sizeDelta = new Vector2(300f, 60f);
-
-        TextMeshProUGUI label = labelObj.AddComponent<TextMeshProUGUI>();
-        label.text = "Swipe here";
-        label.fontSize = 40f;
-        label.fontStyle = FontStyles.Bold;
-        label.alignment = TextAlignmentOptions.Center;
-        label.color = new Color(1f, 0.95f, 0.7f, 1f);
-        label.raycastTarget = false;
-
-        // Bobbing arrow to the right of the label
-        GameObject arrowObj = new GameObject("SwipeArrow", typeof(RectTransform));
-        arrowObj.transform.SetParent(guideRect, false);
-
-        _guideArrow = arrowObj.GetComponent<RectTransform>();
-        _arrowBasePos = new Vector2(-packWidth / 2f - 80f, lineY);
-        _guideArrow.anchoredPosition = _arrowBasePos;
-        _guideArrow.sizeDelta = new Vector2(80f, 60f);
-
-        TextMeshProUGUI arrow = arrowObj.AddComponent<TextMeshProUGUI>();
-        arrow.text = ">>";
-        arrow.fontSize = 52f;
-        arrow.fontStyle = FontStyles.Bold;
-        arrow.alignment = TextAlignmentOptions.Center;
-        arrow.color = new Color(1f, 0.9f, 0.3f, 1f);
-        arrow.raycastTarget = false;
-    }
-
-    private void HandlePackSwipe()
-    {
-        if (_packRect == null) return;
-
-        if (Input.GetMouseButtonDown(0))
-        {
-            _swipeStart = Input.mousePosition;
-            Camera uiCamera = (_canvas != null && _canvas.renderMode != RenderMode.ScreenSpaceOverlay)
-                ? _canvas.worldCamera
-                : null;
-            _swipeStartedOnPack = RectTransformUtility.RectangleContainsScreenPoint(_packRect, _swipeStart, uiCamera);
-        }
-        else if (Input.GetMouseButtonUp(0) && _swipeStartedOnPack)
-        {
-            _swipeStartedOnPack = false;
-
-            Vector2 delta = (Vector2)Input.mousePosition - _swipeStart;
-            if (delta.x > Screen.width * swipeThreshold && Mathf.Abs(delta.y) < delta.x)
-            {
-                OnOpenButtonClicked();
-            }
-        }
-    }
-
-    private void AnimateSwipeGuide()
-    {
-        if (_guideGroup == null) return;
-
-        // Pulse the whole guide, bob the arrow horizontally
-        float pulse = (Mathf.Sin(Time.time * 2f) + 1f) / 2f;
-        _guideGroup.alpha = Mathf.Lerp(0.45f, 1f, pulse);
-
-        if (_guideArrow != null)
-        {
-            float bob = Mathf.Sin(Time.time * 3f) * 12f;
-            _guideArrow.anchoredPosition = _arrowBasePos + new Vector2(bob, 0f);
-        }
     }
 
     // ═══════════════════════════════════════════════════════════════

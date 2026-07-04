@@ -119,7 +119,7 @@ public class SwipeTooltip : MonoBehaviour
         CreateArrow(zoneWidth);
 
         // --- "Swipe here" label ---
-        CreateLabel(zoneHeight);
+        CreateLabel(zoneWidth);
 
         // Start fully transparent
         SetAllAlpha(0f);
@@ -155,7 +155,8 @@ public class SwipeTooltip : MonoBehaviour
         // Create a simple arrow using "→" text
         GameObject arrowObj = new GameObject("SwipeArrow");
         arrowObj.transform.SetParent(_tooltipRoot.transform, false);
-        _arrowOriginalPos = new Vector3(zoneWidth / 2f + 0.4f, 0f, -0.1f);
+        // Between the label (left of the pack) and the pack's left edge
+        _arrowOriginalPos = new Vector3(-(zoneWidth / 2f) - 0.45f, 0f, -0.1f);
         arrowObj.transform.localPosition = _arrowOriginalPos;
 
         // Arrow head using a SpriteRenderer triangle approximation
@@ -166,21 +167,22 @@ public class SwipeTooltip : MonoBehaviour
         arrowObj.transform.localScale = new Vector3(0.5f, 0.5f, 1f);
     }
 
-    private void CreateLabel(float zoneHeight)
+    private void CreateLabel(float zoneWidth)
     {
-        // Place the label above the slice line so it doesn't cover the pack art
-        float labelY = (zoneHeight / 2f) + 0.4f;
+        // Place the label to the left of the pack, on the tear line.
+        // The bobbing arrow sits between the label and the pack edge.
+        float labelX = -(zoneWidth / 2f) - 1f;
 
         // Shadow text
         GameObject shadowObj = new GameObject("LabelShadow");
         shadowObj.transform.SetParent(_tooltipRoot.transform, false);
-        shadowObj.transform.localPosition = new Vector3(0.03f, labelY - 0.03f, -0.1f);
+        shadowObj.transform.localPosition = new Vector3(labelX + 0.03f, -0.03f, -0.1f);
 
         _labelShadow = shadowObj.AddComponent<TextMesh>();
-        _labelShadow.text = "Swipe here  →";
+        _labelShadow.text = "Swipe here";
         _labelShadow.fontSize = 48;
         _labelShadow.characterSize = 0.15f;
-        _labelShadow.anchor = TextAnchor.LowerCenter;
+        _labelShadow.anchor = TextAnchor.MiddleRight;
         _labelShadow.alignment = TextAlignment.Center;
         _labelShadow.color = new Color(0f, 0f, 0f, 0.4f);
         _labelShadow.fontStyle = FontStyle.Bold;
@@ -191,13 +193,13 @@ public class SwipeTooltip : MonoBehaviour
         // Main text
         GameObject labelObj = new GameObject("SwipeLabel");
         labelObj.transform.SetParent(_tooltipRoot.transform, false);
-        labelObj.transform.localPosition = new Vector3(0f, labelY, -0.1f);
+        labelObj.transform.localPosition = new Vector3(labelX, 0f, -0.1f);
 
         _labelText = labelObj.AddComponent<TextMesh>();
-        _labelText.text = "Swipe here  →";
+        _labelText.text = "Swipe here";
         _labelText.fontSize = 48;
         _labelText.characterSize = 0.15f;
-        _labelText.anchor = TextAnchor.LowerCenter;
+        _labelText.anchor = TextAnchor.MiddleRight;
         _labelText.alignment = TextAlignment.Center;
         _labelText.color = new Color(1f, 0.95f, 0.7f, 0.85f);
         _labelText.fontStyle = FontStyle.Bold;

@@ -1,6 +1,8 @@
 using UnityEngine;
 using UnityEngine.SceneManagement;
 using System.Collections;
+using Harukerryzi.Clash;
+using TMPro;
 
 public class ShopController : MonoBehaviour
 {
@@ -14,12 +16,24 @@ public class ShopController : MonoBehaviour
     [Tooltip("The header UI to hide when a pack is bought.")]
     [SerializeField] private GameObject headerPanel;
 
+    [Header("Coin Display")]
+    [Tooltip("TMP text that displays the player's current coin balance. Auto-found by name 'CoinText' if not assigned.")]
+    [SerializeField] private TextMeshProUGUI coinText;
+
+    [Tooltip("TMP text for showing 'Not enough coins' feedback. Auto-created if not assigned.")]
+    [SerializeField] private TextMeshProUGUI feedbackText;
+
+    [Header("Pack Settings")]
+    [SerializeField] private int packPrice = 75;
+
     [Header("Animation Settings")]
     [Tooltip("How long the popup animation takes.")]
     [SerializeField] private float popupDuration = 0.4f;
     
     [Tooltip("Animation curve for the popup scaling. Tip: Make it go slightly above 1 for a bounce effect!")]
     [SerializeField] private AnimationCurve popupCurve = AnimationCurve.EaseInOut(0f, 0f, 1f, 1f);
+
+    private Coroutine _feedbackCoroutine;
 
     private void Start()
     {
@@ -28,6 +42,31 @@ public class ShopController : MonoBehaviour
         {
             packObtainedPanel.SetActive(false);
         }
+
+        // Auto-find CoinText if not assigned
+        if (coinText == null)
+        {
+            GameObject coinTextObj = GameObject.Find("CoinText");
+            if (coinTextObj != null)
+                coinText = coinTextObj.GetComponent<TextMeshProUGUI>();
+        }
+
+        // Auto-find or create feedback text
+        if (feedbackText == null)
+        {
+            GameObject feedbackObj = GameObject.Find("FeedbackText");
+            if (feedbackObj != null)
+            {
+                feedbackText = feedbackObj.GetComponent<TextMeshProUGUI>();
+            }
+            else
+            {
+                feedbackText = CreateFeedbackText();
+            }
+        }
+
+        UpdateCoinDisplay();
+        HideFeedback();
     }
 
     /// <summary>
@@ -35,6 +74,18 @@ public class ShopController : MonoBehaviour
     /// </summary>
     public void OnBuyButtonClicked()
     {
+        // Check if player has enough coins
+        int currentCoins = CurrencyWallet.GetCoins();
+        if (currentCoins < packPrice)
+        {
+            ShowNotEnoughCoinsFeedback(currentCoins);
+            return;
+        }
+
+        // Deduct coins
+        CurrencyWallet.SpendCoins(packPrice);
+        UpdateCoinDisplay();
+
         if (packObtainedPanel != null)
         {
             packObtainedPanel.SetActive(true);
@@ -101,5 +152,121 @@ public class ShopController : MonoBehaviour
             if (shopPanel != null) shopPanel.SetActive(true);
             if (headerPanel != null) headerPanel.SetActive(true);
         }
+    }
+
+    // ═══════════════════════════════════════════════════════════════
+    //  Coin Display
+    // ═══════════════════════════════════════════════════════════════
+
+    private void UpdateCoinDisplay()
+    {
+        if (coinText != null)
+        {
+            coinText.text = CurrencyWallet.GetCoins().ToString();
+        }
+    }
+
+    // ═══════════════════════════════════════════════════════════════
+    //  Not Enough Coins Feedback
+    // ═══════════════════════════════════════════════════════════════
+
+    private void ShowNotEnoughCoinsFeedback(int currentCoins)
+    {
+        if (feedbackText == null)
+        {
+            // Log fallback if no UI text is available
+            Debug.Log("[Shop] Not enough coins! Need " + packPrice + ", have " + currentCoins);
+            return;
+        }
+
+        // Stop any existing feedback animation
+        if (_feedbackCoroutine != null)
+            StopCoroutine(_feedbackCoroutine);
+
+        feedbackText.text = "Not enough coins!\nNeed " + packPrice + ", you have " + currentCoins;
+        feedbackText.gameObject.SetActive(true);
+
+        _feedbackCoroutine = StartCoroutine(FeedbackSequence());
+    }
+
+    private IEnumerator FeedbackSequence()
+    {
+        // Shake animation
+        RectTransform rect = feedbackText.rectTransform;
+        Vector2 originalPos = rect.anchoredPosition;
+
+        float shakeDuration = 0.4f;
+        float shakeIntensity = 8f;
+        float elapsed = 0f;
+
+        while (elapsed < shakeDuration)
+        {
+            elapsed += Time.deltaTime;
+            float offsetX = Random.Range(-shakeIntensity, shakeIntensity) * (1f - elapsed / shakeDuration);
+            rect.anchoredPosition = originalPos + new Vector2(offsetX, 0f);
+            yield return null;
+        }
+
+        rect.anchoredPosition = originalPos;
+
+        // Hold visible for a moment
+        yield return new WaitForSeconds(1.5f);
+
+        // Fade out
+        float fadeDuration = 0.5f;
+        elapsed = 0f;
+        Color startColor = feedbackText.color;
+
+        while (elapsed < fadeDuration)
+        {
+            elapsed += Time.deltaTime;
+            float alpha = Mathf.Lerp(1f, 0f, elapsed / fadeDuration);
+            feedbackText.color = new Color(startColor.r, startColor.g, startColor.b, alpha);
+            yield return null;
+        }
+
+        // Reset and hide
+        feedbackText.color = new Color(startColor.r, startColor.g, startColor.b, 1f);
+        feedbackText.gameObject.SetActive(false);
+        _feedbackCoroutine = null;
+    }
+
+    private void HideFeedback()
+    {
+        if (feedbackText != null)
+            feedbackText.gameObject.SetActive(false);
+    }
+
+    // ═══════════════════════════════════════════════════════════════
+    //  Auto-Create Feedback Text
+    // ═══════════════════════════════════════════════════════════════
+
+    private TextMeshProUGUI CreateFeedbackText()
+    {
+        // Find the Canvas to parent under
+        Canvas canvas = FindObjectOfType<Canvas>();
+        if (canvas == null) return null;
+
+        GameObject feedbackObj = new GameObject("FeedbackText", typeof(RectTransform));
+        feedbackObj.transform.SetParent(canvas.transform, false);
+
+        RectTransform rect = feedbackObj.GetComponent<RectTransform>();
+        rect.anchorMin = new Vector2(0.5f, 0.5f);
+        rect.anchorMax = new Vector2(0.5f, 0.5f);
+        rect.pivot = new Vector2(0.5f, 0.5f);
+        rect.anchoredPosition = new Vector2(0f, 100f);
+        rect.sizeDelta = new Vector2(600f, 120f);
+
+        TextMeshProUGUI tmp = feedbackObj.AddComponent<TextMeshProUGUI>();
+        tmp.text = "";
+        tmp.fontSize = 36f;
+        tmp.alignment = TextAlignmentOptions.Center;
+        tmp.color = new Color(1f, 0.25f, 0.25f, 1f); // Red warning color
+        tmp.enableWordWrapping = true;
+        tmp.raycastTarget = false;
+        tmp.fontStyle = FontStyles.Bold;
+
+        feedbackObj.SetActive(false);
+        return tmp;
     }
 }

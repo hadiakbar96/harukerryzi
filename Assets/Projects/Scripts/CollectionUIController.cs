@@ -941,6 +941,7 @@ public class CollectionUIController : MonoBehaviour
 
     private void OnBackClicked()
     {
-        SceneManager.LoadScene(previousSceneName);
+        string sceneToLoad = string.IsNullOrEmpty(SceneHistory.ReturnScene) ? previousSceneName : SceneHistory.ReturnScene;
+        SceneManager.LoadScene(sceneToLoad);
     }
 }

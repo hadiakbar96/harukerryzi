@@ -155,6 +155,7 @@ public sealed class TitleScreenController : MonoBehaviour
     private void OnCollectionClicked()
     {
         GameAudio.PlaySfx(clickSfx);
+        SceneHistory.SetReturnScene("TitleScreen");
         LoadScene(collectionSceneName);
     }
 

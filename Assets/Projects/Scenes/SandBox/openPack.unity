@@ -215,6 +215,7 @@ GameObject:
   - component: {fileID: 207091861}
   - component: {fileID: 207091863}
   - component: {fileID: 207091864}
+  - component: {fileID: 207091865}
   m_Layer: 0
   m_Name: Pack
   m_TagString: Untagged
@@ -344,6 +345,24 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   cameraAnimator: {fileID: 716404222}
   packAnimator: {fileID: 708602586}
+--- !u!114 &207091865
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 207091860}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: c50b6910a513476bb44c207b2734ef4c, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  fadeInDuration: 0.5
+  pulseSpeed: 2
+  pulseMinAlpha: 0.4
+  pulseMaxAlpha: 0.9
+  arrowBobDistance: 0.3
+  arrowBobSpeed: 1.5
 --- !u!1 &708602583
 GameObject:
   m_ObjectHideFlags: 0
@@ -1055,7 +1074,7 @@ Transform:
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
   m_LocalPosition: {x: 0, y: 3, z: 0}
-  m_LocalScale: {x: 5, y: 1, z: 1}
+  m_LocalScale: {x: 5, y: 1.5, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
   m_Father: {fileID: 207091862}

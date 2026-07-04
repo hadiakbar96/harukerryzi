@@ -24,6 +24,7 @@ public sealed class StageMapController : MonoBehaviour
     [Tooltip("Battle enemy config per battle stage: 0=Tikus, 1=Kunti, 2=Tiang")]
     [SerializeField] private AduTosEnemyConfig[] stageEnemies;
     [SerializeField] private string battleSceneName = "ClashScene";
+    [SerializeField] private string shopSceneName = "Shop";
 
     [Header("Audio")]
     [SerializeField] private AudioClip backgroundMusic;
@@ -239,7 +240,7 @@ public sealed class StageMapController : MonoBehaviour
         MapNode node = _nodes[_selectedPos];
         if (node == null || node.Kind == NodeKind.Store)
         {
-            Debug.Log("[StageMap] Store is WIP.");
+            LoadShopScene();
             return;
         }
 
@@ -274,6 +275,31 @@ public sealed class StageMapController : MonoBehaviour
             new LoadSceneParameters(LoadSceneMode.Single));
 #else
         Debug.LogWarning("[StageMap] Scene is not in Build Settings: " + battleSceneName);
+#endif
+    }
+
+    private void LoadShopScene()
+    {
+        if (string.IsNullOrWhiteSpace(shopSceneName))
+        {
+            Debug.LogWarning("[StageMap] Missing shop scene name.");
+            return;
+        }
+
+        SceneHistory.SetReturnScene("StageMap");
+
+        if (Application.CanStreamedLevelBeLoaded(shopSceneName))
+        {
+            SceneManager.LoadScene(shopSceneName);
+            return;
+        }
+
+#if UNITY_EDITOR
+        EditorSceneManager.LoadSceneInPlayMode(
+            "Assets/Projects/Scenes/SandBox/Shop.unity",
+            new LoadSceneParameters(LoadSceneMode.Single));
+#else
+        Debug.LogWarning("[StageMap] Scene is not in Build Settings: " + shopSceneName);
 #endif
     }
 

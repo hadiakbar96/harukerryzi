@@ -17,20 +17,11 @@ public class PackController : MonoBehaviour
     [Header("Pack Sequence")]
     public PackSequenceController sequenceController;
 
-    [Header("Pack Settings")]
-    public int packPrice = 100;
-
     private bool isOpened = false;
 
     public void OpenPack()
     {
         if (isOpened) return;
-        if (CurrencyWallet.GetCoins() < packPrice)
-        {
-            Debug.Log("[PackController] Not enough coins. Need " + packPrice + ", have " + CurrencyWallet.GetCoins());
-            return;
-        }
-        CurrencyWallet.SpendCoins(packPrice);
         isOpened = true;
         sequenceController.StartSequence();
     }

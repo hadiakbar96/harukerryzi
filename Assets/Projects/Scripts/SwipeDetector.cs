@@ -8,10 +8,12 @@ public class SwipeDetector : MonoBehaviour
     private bool startedOnSliceZone = false;
 
     private PackController packController;
+    private SwipeTooltip swipeTooltip;
 
     private void Start()
     {
         packController = GetComponent<PackController>();
+        swipeTooltip = GetComponent<SwipeTooltip>();
     }
 
     private void Update()
@@ -47,6 +49,10 @@ public class SwipeDetector : MonoBehaviour
 
             if (swipe.x > 2f && Mathf.Abs(swipe.y) < 1f)
             {
+                // Hide the tooltip before opening the pack
+                if (swipeTooltip != null)
+                    swipeTooltip.Hide();
+
                 packController.OpenPack();
             }
 

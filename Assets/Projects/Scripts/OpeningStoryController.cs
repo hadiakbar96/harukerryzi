@@ -134,11 +134,11 @@ public class OpeningStoryController : MonoBehaviour
     private readonly DialogLine[] _dialogLines = new DialogLine[]
     {
         new DialogLine("Tikus", "Oh hey, new around here?", true),
-        new DialogLine("You",   "...", false),
+        new DialogLine("You",   "....", false),
         new DialogLine("Tikus", "Rest assured, you'll stuck here 4 evah!!", true),
-        new DialogLine("You",   "...", false),
-        new DialogLine("Tikus", "Okay don't give me that hopeless look you poor thing. I know you have no idea where you are. But there's one way you can get out from here....", true),
-        new DialogLine("You",   "Well... Spare some mercy for me please.", false),
+        new DialogLine("You",   "How do I get out of here?", false),
+        new DialogLine("Tikus", "there’s one way you can get out from here…", true),
+        new DialogLine("You",   "And that is…?", false),
         new DialogLine("Tikus", "You have to fight the gods!", true),
         new DialogLine("Tikus", "But first, I have to test you. Use whatever you have to fight me!", true),
     };

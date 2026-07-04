@@ -168,7 +168,8 @@ public class SwipeTooltip : MonoBehaviour
 
     private void CreateLabel(float zoneHeight)
     {
-        float labelY = -(zoneHeight / 2f) - 0.4f;
+        // Place the label above the slice line so it doesn't cover the pack art
+        float labelY = (zoneHeight / 2f) + 0.4f;
 
         // Shadow text
         GameObject shadowObj = new GameObject("LabelShadow");
@@ -179,7 +180,7 @@ public class SwipeTooltip : MonoBehaviour
         _labelShadow.text = "Swipe here  →";
         _labelShadow.fontSize = 48;
         _labelShadow.characterSize = 0.15f;
-        _labelShadow.anchor = TextAnchor.UpperCenter;
+        _labelShadow.anchor = TextAnchor.LowerCenter;
         _labelShadow.alignment = TextAlignment.Center;
         _labelShadow.color = new Color(0f, 0f, 0f, 0.4f);
         _labelShadow.fontStyle = FontStyle.Bold;
@@ -196,7 +197,7 @@ public class SwipeTooltip : MonoBehaviour
         _labelText.text = "Swipe here  →";
         _labelText.fontSize = 48;
         _labelText.characterSize = 0.15f;
-        _labelText.anchor = TextAnchor.UpperCenter;
+        _labelText.anchor = TextAnchor.LowerCenter;
         _labelText.alignment = TextAlignment.Center;
         _labelText.color = new Color(1f, 0.95f, 0.7f, 0.85f);
         _labelText.fontStyle = FontStyle.Bold;

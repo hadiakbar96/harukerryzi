@@ -24,6 +24,9 @@ EditorBuildSettings:
     path: Assets/Projects/Scenes/SandBox/openPack.unity
     guid: 51daedb0f9da0424cbcbc1642d3d0e96
   - enabled: 1
+    path: Assets/Projects/Scenes/SandBox/Shop.unity
+    guid: f39940c8a314c4acaa7ec76206351633
+  - enabled: 1
     path: Assets/Projects/Scenes/SandBox/Collection.unity
     guid: 676a3c6b73e5d423aa8f4cf45c91d619
   m_configObjects:
